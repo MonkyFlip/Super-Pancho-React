@@ -1,0 +1,21 @@
+/* src/index.css */
+:root {
+  --app-bg: #f6fbf6;
+}
+
+/* reset pequeño necesario */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--app-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden; /* evita scroll horizontal inesperado */
+}
+
+* { box-sizing: inherit; }
+
+img, svg { max-width: 100%; height: auto; display: block; }
