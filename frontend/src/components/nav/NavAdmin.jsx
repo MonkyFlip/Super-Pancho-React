@@ -4,7 +4,12 @@ import { temas } from '../../styles/temas';
 import CambioTema from '../CambioTema';
 import {
   FaUsers, FaUserFriends, FaBoxOpen, FaBuilding, FaUserTie,
-  FaChartLine, FaDatabase, FaFileImport, FaFileExport, FaBars, FaSignOutAlt, FaUserCog, FaHome
+  FaChartLine, FaDatabase, FaFileImport, FaFileExport, FaBars, FaSignOutAlt, FaUserCog, FaHome,
+  FaRegImages,
+  FaImages,
+  FaVideo,
+  FaFilm,
+  FaBook
 } from 'react-icons/fa';
 
 const THEME_KEY = 'app_theme_selected';
@@ -99,6 +104,47 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, themeKey, collapsed]);
+
+      useEffect(() => {
+    const onAuthChange = (e) => {
+      // escucha storage y eventos custom 'auth:changed'
+      if (e?.type === 'storage') {
+        if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+          // si la sesión ya no es válida, redirige a login
+          try {
+            const token = localStorage.getItem('app_auth_token');
+            if (!token) window.location.hash = '#/login';
+          } catch { window.location.hash = '#/login'; }
+        } else if (e.key === THEME_KEY) {
+          setThemeKey(e.newValue || 'bosque_claro');
+        } else if (e.key === COLLAPSE_KEY) {
+          setCollapsed(e.newValue === '1');
+        }
+      } else if (e?.type === 'auth:changed' || e === 'auth:changed') {
+        // notificación interna desde LoginView
+        try {
+          const token = localStorage.getItem('app_auth_token');
+          if (!token) {
+            window.location.hash = '#/login';
+          } else {
+            // opcional: actualizar usuario si tienes getStoredUser
+            // setUser(getStoredUser());
+          }
+        } catch {
+          window.location.hash = '#/login';
+        }
+      }
+    };
+
+    const onAuthChangedEvent = () => onAuthChange('auth:changed');
+
+    window.addEventListener('storage', onAuthChange);
+    window.addEventListener('auth:changed', onAuthChangedEvent);
+    return () => {
+      window.removeEventListener('storage', onAuthChange);
+      window.removeEventListener('auth:changed', onAuthChangedEvent);
+    };
+  }, []);
 
     // open/close with smooth height transitions
     const openSmooth = () => {
@@ -273,7 +319,8 @@ return (
           icon={<FaChartLine />}
           label="REPORTES"
           items={[
-            { label: 'Reportes de Ventas', path: '#/admin/reportes/ventas', icon: <FaChartLine /> }
+            { label: 'Reportes de Ventas', path: '#/admin/reportes/ventas', icon: <FaChartLine /> },
+            { label: 'Analisis de Ventas', path: '#/admin/reportes/analisis', icon: <FaBook /> }
           ]}
         />
 
@@ -284,6 +331,17 @@ return (
           items={[
             { label: 'Backups', path: '#/admin/bd/backups', icon: <FaFileExport /> },
             { label: 'Importar Registros', path: '#/admin/bd/importar', icon: <FaFileImport /> }
+          ]}
+        />
+
+        <MenuGroup
+          id="multimedia"
+          icon={<FaFilm />}
+          label="MULTIMEDIA"
+          items={[
+            { label: 'Imagenes', path: '#/admin/multimedia/imagenes', icon: <FaImages /> },
+            { label: 'Fotos', path: '#/admin/multimedia/fotos', icon: <FaRegImages /> },
+            { label: 'Videos', path: '#/admin/multimedia/videos', icon: <FaVideo /> }
           ]}
         />
       </nav>

@@ -1,33 +1,87 @@
 // src/views/usuarios/ModalEdit.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FaEdit } from 'react-icons/fa';
 import { actualizarUsuario } from '../../../services/api';
+import { isAuthenticated } from '../../../services/auth';
 
 const ModalEdit = ({ visible, onClose, onSaveSuccess, usuario = null, tema }) => {
   const [form, setForm] = useState({ nombre: '', email: '', rol: '', telefono: '', activo: true });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    if (usuario) setForm({ nombre: usuario.nombre ?? usuario.name ?? '', email: usuario.email ?? '', rol: usuario.rol ?? usuario.role ?? '', telefono: usuario.telefono ?? '', activo: typeof usuario.activo === 'boolean' ? usuario.activo : true });
-    if (!visible) setForm({ nombre: '', email: '', rol: '', telefono: '', activo: true });
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (usuario) {
+      setForm({
+        nombre: usuario.nombre ?? usuario.name ?? '',
+        email: usuario.email ?? '',
+        rol: usuario.rol ?? usuario.role ?? '',
+        telefono: usuario.telefono ?? '',
+        activo: typeof usuario.activo === 'boolean' ? usuario.activo : true
+      });
+    }
+    if (!visible) {
+      setForm({ nombre: '', email: '', rol: '', telefono: '', activo: true });
+      setError(null);
+    }
   }, [usuario, visible]);
+
+  // Escuchar cambios en localStorage para invalidar sesión si se cierra en otra pestaña
+  useEffect(() => {
+    const onAuthStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+        if (!isAuthenticated()) {
+          try { onClose?.(); } catch {}
+          window.location.hash = '#/login';
+        }
+      }
+    };
+    window.addEventListener('storage', onAuthStorage);
+    return () => window.removeEventListener('storage', onAuthStorage);
+  }, [onClose]);
 
   if (!visible) return null;
 
   const submit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    // Validar sesión antes de enviar
+    if (!isAuthenticated()) {
+      setError('Sesión no válida. Por favor inicia sesión de nuevo.');
+      try { onClose?.(); } catch {}
+      window.location.hash = '#/login';
+      return;
+    }
+
     if (!usuario) return;
-    if (!form.nombre || !form.email) { setError('Nombre y email son requeridos'); return; }
+    if (!form.nombre || !form.email) {
+      setError('Nombre y email son requeridos');
+      return;
+    }
+
     setLoading(true);
     try {
       await actualizarUsuario(usuario.id ?? usuario._id, form);
       if (typeof onSaveSuccess === 'function') onSaveSuccess();
     } catch (err) {
-      setError(err?.response?.data?.error || err.message || 'Error al actualizar usuario');
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.error || err.message || 'Error al actualizar usuario';
+      if (status === 401 || status === 403) {
+        setError('Sesión expirada o no autorizada. Redirigiendo a login...');
+        try { onClose?.(); } catch {}
+        window.location.hash = '#/login';
+      } else {
+        setError(serverMsg);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
@@ -63,7 +117,7 @@ const ModalEdit = ({ visible, onClose, onSaveSuccess, usuario = null, tema }) =>
         {error && <div style={{ color: '#a33', marginTop: 8 }}>{error}</div>}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)}>Cancelar</button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)} disabled={loading}>Cancelar</button>
           <button type="submit" disabled={loading} style={primaryBtnStyle(tema)}>{loading ? 'Guardando...' : 'Guardar cambios'}</button>
         </div>
       </form>

@@ -1,23 +1,63 @@
 // src/views/usuarios/ModalDelete.jsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import { eliminarUsuario } from '../../../services/api';
+import { isAuthenticated } from '../../../services/auth';
 
 const ModalDelete = ({ visible, onClose, onConfirmSuccess, usuario, tema }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Cerrar modal y redirigir si la sesión se invalida en otra pestaña
+  useEffect(() => {
+    const onAuthStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+        if (!isAuthenticated()) {
+          try { onClose?.(); } catch {}
+          window.location.hash = '#/login';
+        }
+      }
+    };
+    window.addEventListener('storage', onAuthStorage);
+    return () => window.removeEventListener('storage', onAuthStorage);
+  }, [onClose]);
 
   if (!visible || !usuario) return null;
 
   const confirm = async () => {
     setError(null);
+
+    // validar sesión antes de intentar eliminar
+    if (!isAuthenticated()) {
+      setError('Sesión no válida. Por favor inicia sesión de nuevo.');
+      try { onClose?.(); } catch {}
+      window.location.hash = '#/login';
+      return;
+    }
+
     setLoading(true);
     try {
       await eliminarUsuario(usuario.id ?? usuario._id);
       if (typeof onConfirmSuccess === 'function') onConfirmSuccess();
     } catch (err) {
-      setError(err?.response?.data?.error || err.message || 'Error al eliminar usuario');
-      setLoading(false);
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.error || err.message || 'Error al eliminar usuario';
+      if (status === 401 || status === 403) {
+        setError('Sesión expirada o no autorizada. Redirigiendo a login...');
+        try { onClose?.(); } catch {}
+        window.location.hash = '#/login';
+      } else {
+        setError(serverMsg);
+      }
+    } finally {
+      if (mountedRef.current) setLoading(false);
     }
   };
 

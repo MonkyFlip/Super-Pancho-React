@@ -1,31 +1,78 @@
 // src/views/usuarios/ModalCreate.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FaUserPlus } from 'react-icons/fa';
 import { crearUsuario } from '../../../services/api';
+import { isAuthenticated } from '../../../services/auth';
 
 const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
   const [form, setForm] = useState({ nombre: '', email: '', rol: '', telefono: '', activo: true });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    if (!visible) setForm({ nombre: '', email: '', rol: '', telefono: '', activo: true });
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      setForm({ nombre: '', email: '', rol: '', telefono: '', activo: true });
+      setError(null);
+    }
   }, [visible]);
+
+  // Escuchar cambios en localStorage para invalidar sesión si se cierra en otra pestaña
+  useEffect(() => {
+    const onAuthStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+        if (!isAuthenticated()) {
+          // cerrar modal y forzar login
+          try { onClose?.(); } catch {}
+          window.location.hash = '#/login';
+        }
+      }
+    };
+    window.addEventListener('storage', onAuthStorage);
+    return () => window.removeEventListener('storage', onAuthStorage);
+  }, [onClose]);
 
   if (!visible) return null;
 
   const submit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!form.nombre || !form.email) { setError('Nombre y email son requeridos'); return; }
+
+    // Validar sesión antes de enviar
+    if (!isAuthenticated()) {
+      setError('Sesión no válida. Por favor, inicia sesión de nuevo.');
+      window.location.hash = '#/login';
+      return;
+    }
+
+    if (!form.nombre || !form.email) {
+      setError('Nombre y email son requeridos');
+      return;
+    }
+
     setLoading(true);
     try {
       await crearUsuario(form);
       if (typeof onSaveSuccess === 'function') onSaveSuccess();
     } catch (err) {
-      setError(err?.response?.data?.error || err.message || 'Error al crear usuario');
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.error || err.message || 'Error al crear usuario';
+      // Si el backend indica 401/403, forzamos re-login
+      if (status === 401 || status === 403) {
+        setError('Sesión expirada o no autorizada. Redirigiendo a login...');
+        try { onClose?.(); } catch {}
+        window.location.hash = '#/login';
+      } else {
+        setError(serverMsg);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 

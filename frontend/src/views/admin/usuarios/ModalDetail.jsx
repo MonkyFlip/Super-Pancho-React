@@ -1,9 +1,38 @@
 // src/views/usuarios/ModalDetail.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FaInfoCircle } from 'react-icons/fa';
+import { isAuthenticated } from '../../../services/auth';
 
 const ModalDetail = ({ visible, onClose, usuario, tema }) => {
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    const onAuthStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+        if (!isAuthenticated()) {
+          try { onClose?.(); } catch {}
+          window.location.hash = '#/login';
+        }
+      }
+    };
+    window.addEventListener('storage', onAuthStorage);
+    return () => window.removeEventListener('storage', onAuthStorage);
+  }, [onClose]);
+
   if (!visible || !usuario) return null;
+
+  // adicional: si al renderizar la sesión ya no es válida, cerrar y redirigir
+  if (!isAuthenticated()) {
+    try { onClose?.(); } catch {}
+    window.location.hash = '#/login';
+    return null;
+  }
 
   return (
     <div style={backdropStyle()}>

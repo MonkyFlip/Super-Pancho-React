@@ -1,13 +1,13 @@
 // src/views/usuarios/DashboardU.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { temas } from '../../../styles/temas';
-import { FaPlus, FaEye, FaEdit, FaTrash, FaSync } from 'react-icons/fa';
+import { FaPlus, FaEye, FaEdit, FaTrash, FaSync, FaHome } from 'react-icons/fa';
 import ModalCreate from './ModalCreate';
 import ModalEdit from './ModalEdit';
 import ModalDetail from './ModalDetail';
 import ModalDelete from './ModalDelete';
 import { getUsuarios } from '../../../services/api';
-import { getStoredUser, isAuthenticated } from '../../../services/auth';
+import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../../services/auth';
 
 const THEME_KEY = 'app_theme_selected';
 
@@ -26,7 +26,9 @@ const iconBtnDangerStyle = (tema) => ({
 
 const Toolbar = ({ tema, onNuevo, onRefresh, loading }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
-    <div style={{ fontSize: 18, fontWeight: 800, color: tema.texto }}>Gestionar Usuarios</div>
+    <div style={{ fontSize: 18, fontWeight: 800, color: tema.texto, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <FaHome /> <span>Gestionar Usuarios</span>
+    </div>
     <div style={{ display: 'flex', gap: 8 }}>
       <button
         onClick={onRefresh}
@@ -104,14 +106,71 @@ const DashboardU = () => {
   const [showDelete, setShowDelete] = useState(false);
   const [active, setActive] = useState(null);
 
+  const mountedRef = useRef(false);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
   useEffect(() => {
     const onStorage = (e) => { if (e.key === THEME_KEY) setTemaKey(e.newValue || 'bosque_claro'); };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  // Valida sesión y rol localmente; devuelve true si puede proceder
+  const ensureLocalAdmin = useCallback(() => {
+    try {
+      if (!isAuthenticated()) {
+        window.location.hash = '#/login';
+        return false;
+      }
+
+      const localUser = getStoredUser();
+      if (!localUser) {
+        window.location.hash = '#/login';
+        return false;
+      }
+
+      const rolLocal = localUser?.rol ?? localUser?.role ?? localUser?.roleName ?? localUser?.role_type ?? '';
+      const isAdminLocal = String(rolLocal).toLowerCase().includes('admin');
+
+      if (!isAdminLocal) {
+        const home = getHomeRouteForUser(localUser) || '#/login';
+        window.location.hash = home;
+        return false;
+      }
+
+      setAllowed(true);
+      return true;
+    } catch (err) {
+      if (mountedRef.current) window.location.hash = '#/login';
+      return false;
+    }
+  }, []);
+
+  // Escucha cambios de auth en storage para invalidar sesión si es necesario
+  useEffect(() => {
+    const onAuthStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+        // re-validate session
+        if (!isAuthenticated()) {
+          window.location.hash = '#/login';
+        } else {
+          ensureLocalAdmin();
+        }
+      }
+    };
+    window.addEventListener('storage', onAuthStorage);
+    return () => window.removeEventListener('storage', onAuthStorage);
+  }, [ensureLocalAdmin]);
+
   const fetchUsuarios = async () => {
-    if (!isAuthenticated()) {
+    // Solo intentar si sesión/rol validados
+    if (!ensureLocalAdmin()) {
       setError('Sesión no válida');
       return;
     }
@@ -124,25 +183,24 @@ const DashboardU = () => {
     } catch (err) {
       setError(err?.response?.data?.error || err.message || 'Error al cargar usuarios');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsuarios();
+    // Al montar validamos sesión y luego cargamos
+    if (ensureLocalAdmin()) {
+      fetchUsuarios();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // queremos correr solo al montar
 
   const handleCreate = (payload) => {
-    // payload: { nombre, email, rol, telefono, activo }
-    // ModalCreate will call crearUsuario; here we re-fetch after success
     setLoading(true);
-    // re-fetch after modal saves (modal will call API directly and then call onSaveSuccess)
     fetchUsuarios();
   };
 
   const handleEdit = (id, payload) => {
-    // re-fetch after edit
     setLoading(true);
     fetchUsuarios();
   };

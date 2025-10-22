@@ -2,12 +2,15 @@
 from dotenv import load_dotenv
 import os
 import logging
-from flask import Flask, request, jsonify
+import json
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
+from bson import json_util
 
-# Cargar .env lo antes posible para que módulos que lean os.environ obtengan las variables
+# cargar variables de entorno
 load_dotenv()
 
+# imports de la aplicación (ajusta si cambian las rutas internas)
 from .db.conexion import get_db
 from .controllers.db.crear_db_controller import crear_y_poblar_db
 from .controllers.login.login_controller import login_user, AuthError
@@ -19,60 +22,226 @@ app = Flask(__name__)
 # -----------------------
 app.secret_key = os.environ.get("SECRET_KEY", "clave_insegura_dev")
 
-# CORS: incluir exactamente el origen del frontend en desarrollo
 FRONTEND_ORIGINS = [
     os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000"),
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    "http://localhost:3000"
 ]
-CORS(app, resources={r"/*": {"origins": FRONTEND_ORIGINS}}, supports_credentials=True)
 
-# Logging
+# CORS: permitir orígenes de desarrollo, métodos y headers comunes
+CORS(app,
+     resources={r"/*": {"origins": FRONTEND_ORIGINS}},
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+
+# logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.info("JWT secret configured: %s", bool(os.environ.get("JWT_SECRET")))
+logger.info("API iniciado. JWT secret configured: %s", bool(os.environ.get("JWT_SECRET")))
 
 # -----------------------
 # Utilidades
 # -----------------------
-def _serialize_user_for_response(user_doc):
+def _serialize_for_json(obj):
     """
-    Acepta tanto un documento serializado (dict con _id como str) como un dict bruto de mongo.
-    Normaliza quitando password_hash y convirtiendo fechas y _id a strings.
+    Convierte objetos BSON (ObjectId, datetimes) a JSON serializable usando bson.json_util
     """
-    if not user_doc:
-        return None
-    u = dict(user_doc)
-    u.pop("password_hash", None)
-    # _id puede venir ya como string o como ObjectId
-    if "_id" in u:
+    try:
+        return json.loads(json_util.dumps(obj))
+    except Exception:
         try:
-            u["_id"] = str(u["_id"])
+            return json.loads(json.dumps(obj))
         except Exception:
-            pass
-    # fechas
-    for k in ("created_at", "last_login"):
-        if k in u and hasattr(u[k], "isoformat"):
-            try:
-                u[k] = u[k].isoformat()
-            except Exception:
-                pass
-    # normalizar rol
-    rol = u.get("rol") or u.get("role") or u.get("roleName") or u.get("role_type") or u.get("perfil") or u.get("nivel")
-    if rol is not None:
-        u["rol"] = rol
-    return u
+            return str(obj)
 
 # -----------------------
-# Endpoints
+# Preflight / OPTIONS handler
+# -----------------------
+@app.before_request
+def handle_options_preflight():
+    """
+    Responder explícitamente a OPTIONS con 200 OK para evitar que middlewares posteriores
+    (autenticación, DB) bloqueen el preflight.
+    """
+    if request.method == 'OPTIONS':
+        resp = make_response('', 200)
+        return resp
+
+# -----------------------
+# Root: página interactiva "API de Super Pancho"
+# -----------------------
+@app.route('/', methods=['GET'])
+def index():
+    base = request.host_url.rstrip('/')
+    html = f"""
+    <!doctype html>
+    <html lang="es">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>API de Super Pancho</title>
+        <style>
+          body {{ font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:#f6f8fb; color:#111; padding:28px; }}
+          .card {{ background:#fff; border-radius:12px; padding:18px; box-shadow:0 8px 26px rgba(16,24,40,0.06); max-width:1000px; margin:18px auto; }}
+          h1 {{ margin:0 0 8px 0; font-size:22px; }}
+          p {{ margin:0 0 12px 0; color:#555; }}
+          button {{ margin:6px 8px 6px 0; padding:8px 12px; border-radius:8px; border:1px solid #e6eefc; background:#fff; cursor:pointer; }}
+          pre {{ background:#0f1720; color:#e6eefc; padding:12px; border-radius:8px; overflow:auto; max-height:360px; }}
+          .small {{ color:#777; margin-top:10px; display:block; }}
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>API de Super Pancho</h1>
+          <p>Servidor de desarrollo. Usa los botones para inspeccionar colecciones y documentos.</p>
+
+          <div>
+            <button onclick="fetchCollections()">Listar colecciones</button>
+            <button onclick="fetchUsuarios()">Ver /usuarios (primeros 50)</button>
+            <button onclick="fetchCollectionSample('clientes')">Ver /clientes (primeros 50)</button>
+            <button onclick="fetchCollectionSample('productos')">Ver /productos (primeros 50)</button>
+            <button onclick="pingVerificaDb()">Verificar DB</button>
+            <button onclick="document.getElementById('out').textContent = ''">Limpiar</button>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div style="font-weight:800">Salida</div>
+            <pre id="out">Lista de colecciones y endpoints disponibles...</pre>
+            <div class="small">Origin detectada: {request.headers.get('Origin') or 'N/A'}</div>
+          </div>
+
+        </div>
+
+        <script>
+          const base = '{base}';
+
+          async function fetchCollections() {{
+            try {{
+              const res = await fetch(base + '/colecciones');
+              const json = await res.json();
+              document.getElementById('out').textContent = JSON.stringify(json, null, 2);
+            }} catch (e) {{
+              document.getElementById('out').textContent = 'Error: ' + e;
+            }}
+          }}
+
+          async function fetchUsuarios() {{
+            try {{
+              const res = await fetch(base + '/usuarios?limit=50');
+              const json = await res.json();
+              document.getElementById('out').textContent = JSON.stringify(json, null, 2);
+            }} catch (e) {{
+              document.getElementById('out').textContent = 'Error: ' + e;
+            }}
+          }}
+
+          async function fetchCollectionSample(name) {{
+            try {{
+              const res = await fetch(base + '/coleccion/' + encodeURIComponent(name) + '?limit=50');
+              const json = await res.json();
+              document.getElementById('out').textContent = JSON.stringify(json, null, 2);
+            }} catch (e) {{
+              document.getElementById('out').textContent = 'Error: ' + e;
+            }}
+          }}
+
+          async function pingVerificaDb() {{
+            try {{
+              const res = await fetch(base + '/verifica_db');
+              const json = await res.json();
+              document.getElementById('out').textContent = JSON.stringify(json, null, 2);
+            }} catch (e) {{
+              document.getElementById('out').textContent = 'Error: ' + e;
+            }}
+          }}
+        </script>
+      </body>
+    </html>
+    """
+    resp = make_response(html, 200)
+    resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return resp
+
+# -----------------------
+# Endpoint: listar colecciones disponibles
+# -----------------------
+@app.route('/colecciones', methods=['GET'])
+def listar_colecciones():
+    try:
+        db = get_db()
+        if db is None:
+            return jsonify({"error": "DB no disponible"}), 500
+        names = db.list_collection_names()
+        return jsonify({"ok": True, "colecciones": names}), 200
+    except Exception as e:
+        logger.exception("Error en /colecciones: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+# -----------------------
+# Endpoint: obtener documentos de una colección (safe)
+# -----------------------
+@app.route('/coleccion/<string:nombre>', methods=['GET'])
+def coleccion_sample(nombre):
+    try:
+        limit = int(request.args.get('limit') or 50)
+        limit = max(1, min(limit, 200))
+    except Exception:
+        limit = 50
+    try:
+        db = get_db()
+        if db is None:
+            return jsonify({"error": "DB no disponible"}), 500
+        if nombre not in db.list_collection_names():
+            return jsonify({"error": f"Colección '{nombre}' no encontrada"}), 404
+        cursor = db[nombre].find().limit(limit)
+        docs = list(cursor)
+        return jsonify({"ok": True, "coleccion": nombre, "count": len(docs), "docs": _serialize_for_json(docs)}), 200
+    except Exception as e:
+        logger.exception("Error en /coleccion/%s: %s", nombre, e)
+        return jsonify({"error": str(e)}), 500
+
+# -----------------------
+# Endpoint /usuarios (compatibilidad con frontend)
+# -----------------------
+@app.route('/usuarios', methods=['GET'])
+def usuarios_list():
+    """
+    Endpoint público de ejemplo que devuelve los primeros documentos de la colección 'usuarios'.
+    Acepta query params:
+      - limit (int, default 50, max 200)
+      - q (string, opcional) para filtrar por nombre/email (básico, case-insensitive, contiene)
+    """
+    try:
+        db = get_db()
+        if db is None:
+            return jsonify({"error": "DB no disponible"}), 500
+
+        try:
+            limit = int(request.args.get('limit') or 50)
+            limit = max(1, min(limit, 200))
+        except Exception:
+            limit = 50
+
+        q = request.args.get('q') or None
+
+        query = {}
+        if q:
+            # búsqueda simple en nombre o email
+            query = {"$or": [{"nombre": {"$regex": q, "$options": "i"}}, {"email": {"$regex": q, "$options": "i"}}]}
+
+        cursor = db['usuarios'].find(query).limit(limit)
+        docs = list(cursor)
+        return jsonify({"ok": True, "count": len(docs), "docs": _serialize_for_json(docs)}), 200
+    except Exception as e:
+        logger.exception("Error en /usuarios: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+# -----------------------
+# Endpoints existentes (login, verifica_db, crear_db, debug_cookies)
 # -----------------------
 @app.route('/login', methods=['POST'])
 def login():
-    """
-    Flujo mínimo adaptado a login_user que retorna:
-      { "user": {...}, "redirect": "/ruta", "token": "..." }
-    - Serializa el user antes de devolver.
-    - Devuelve 200 con la estructura completa para que el frontend decida.
-    """
     data = request.get_json() or {}
     usuario = data.get('usuario')
     password = data.get('password')
@@ -80,7 +249,6 @@ def login():
     try:
         result = login_user(get_db, usuario, password)
         if not isinstance(result, dict):
-            # si login_user no devolvió la forma esperada, normalizamos
             raise Exception("Respuesta inesperada de login_user")
 
         user = result.get("user") or result.get("usuario") or result.get("data") or None
@@ -88,27 +256,29 @@ def login():
         token = result.get("token")
         expires_in = result.get("expiresIn") or result.get("expires_in") or None
 
-        serialized_user = _serialize_user_for_response(user) or None
+        serialized_user = None
+        if user:
+            # normalizar y eliminar password_hash
+            serialized_user = _serialize_for_json(user)
+            if isinstance(serialized_user, dict):
+                serialized_user.pop("password_hash", None)
 
         resp_payload = {}
         if serialized_user is not None:
             resp_payload["user"] = serialized_user
         if redirect:
             resp_payload["redirect"] = redirect
-        # siempre incluir token explícitamente (puede ser null)
         resp_payload["token"] = token
         if expires_in:
             resp_payload["expiresIn"] = expires_in
 
-        # Log de auditoría mínimo
         try:
-            rol = serialized_user.get("rol") if serialized_user else None
+            rol = serialized_user.get("rol") if isinstance(serialized_user, dict) else None
             logger.info("Login exitoso: usuario=%s rol=%s desde IP=%s", usuario, str(rol), request.remote_addr or "desconocida")
         except Exception:
             logger.info("Login exitoso: usuario=%s desde IP=%s", usuario, request.remote_addr or "desconocida")
 
         return jsonify(resp_payload), 200
-
     except AuthError as e:
         return jsonify({'error': str(e)}), 401
     except Exception as e:
@@ -117,18 +287,10 @@ def login():
 
 @app.route('/me', methods=['GET'])
 def me():
-    """
-    Endpoint opcional. En el flujo mínimo actual el frontend mantiene sesión localmente.
-    /me queda como placeholder y retorna 401 por defecto para indicar ausencia de sesión server-side.
-    """
     return jsonify({"error": "no authenticated"}), 401
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    """
-    En el flujo mínimo el frontend borra localStorage; backend no mantiene sesión.
-    Devolvemos OK por compatibilidad.
-    """
     return jsonify({"ok": True}), 200
 
 @app.route('/verifica_db', methods=['GET'])

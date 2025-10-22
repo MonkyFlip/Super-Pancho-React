@@ -5,6 +5,13 @@ import { temas } from '../../styles/temas';
 import { getStoredUser as getStoredUserApi } from '../../services/api';
 import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../services/auth';
 
+// Importar dashboards de submódulos dentro de admin
+import DashboardU from './usuarios/DashboardU';
+import DashboardC from './clientes/DashboardC';
+import DashboardP from './productos/DashboardP';
+import DashboardA from './areas/DashboardA';
+import DashboardT from './trabajadores/DashboardT';
+
 const THEME_KEY = 'app_theme_selected';
 
 const AnimatedSparkline = ({ data = [], color = '#1976d2', height = 80 }) => {
@@ -86,6 +93,13 @@ const KPI = ({ title, value, trend, accent }) => (
   </div>
 );
 
+// parseHash util
+const parseHash = () => {
+  const h = (window.location.hash || '#/').replace(/^#/, '');
+  const parts = h.split('/').filter(Boolean);
+  return parts; // ejemplo: ['admin','usuarios','DashboardU']
+};
+
 const Dashboard = () => {
   const [localThemeKey, setLocalThemeKey] = useState(() => {
     try { return localStorage.getItem(THEME_KEY) || 'bosque_claro'; } catch { return 'bosque_claro'; }
@@ -95,19 +109,19 @@ const Dashboard = () => {
   const [allowed, setAllowed] = useState(false);
   const mountedRef = useRef(true);
 
+  // sub-route state
+  const [route, setRoute] = useState(parseHash());
+
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
   const ensureLocalAdmin = useCallback(() => {
     try {
-      // Primero, validar que la sesión esté activa
       if (!isAuthenticated()) {
         window.location.hash = '#/login';
         return false;
       }
 
-      // Intentar obtener user desde auth.js (centralizado)
       const user = getStoredUser();
-      // Fallback a la compatibilidad con getStoredUser de api si es necesario
       const userApi = getStoredUserApi();
       const localUser = user || userApi;
 
@@ -115,7 +129,6 @@ const Dashboard = () => {
       const isAdminLocal = rolLocal && String(rolLocal).toLowerCase().includes('admin');
 
       if (!isAdminLocal && mountedRef.current) {
-        // Si el usuario está autenticado pero no es admin, redirige a su home según rol
         const home = getHomeRouteForUser(localUser) || '#/login';
         window.location.hash = home;
         return false;
@@ -144,8 +157,77 @@ const Dashboard = () => {
     return () => { window.removeEventListener('storage', onStorage); clearInterval(poll); };
   }, [localThemeKey]);
 
+  // listen hash changes to handle sub-routing inside admin
+  useEffect(() => {
+    const onHash = () => setRoute(parseHash());
+    window.addEventListener('hashchange', onHash);
+    // set initial
+    setRoute(parseHash());
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
   if (!allowed) return null;
 
+  // Decide sub-route: route[0] is 'admin'
+  const [, second, third] = route;
+
+  // Si la subruta corresponde a un dashboard de CRUD, renderizarlo y regresar
+  if (second === 'usuarios' || third === 'DashboardU') {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+        <NavAdmin />
+        <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          <DashboardU />
+        </main>
+      </div>
+    );
+  }
+
+  if (second === 'clientes' || third === 'DashboardC') {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+        <NavAdmin />
+        <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          <DashboardC />
+        </main>
+      </div>
+    );
+  }
+
+  if (second === 'productos' || third === 'DashboardP') {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+        <NavAdmin />
+        <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          <DashboardP />
+        </main>
+      </div>
+    );
+  }
+
+  if (second === 'areas' || third === 'DashboardA') {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+        <NavAdmin />
+        <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          <DashboardA />
+        </main>
+      </div>
+    );
+  }
+
+  if (second === 'trabajadores' || third === 'DashboardT') {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+        <NavAdmin />
+        <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          <DashboardT />
+        </main>
+      </div>
+    );
+  }
+
+  // Si no coincide con subruta conocida, renderizar el contenido principal del admin (dashboard principal)
   // mock data
   const ventas = [120, 180, 95, 220, 160, 200, 240, 180, 210, 230];
   const clientes = [6, 9, 4, 12, 7, 10, 11, 9, 8, 13];
@@ -227,44 +309,26 @@ const Dashboard = () => {
 
                 <div style={{ width: 180, background: '#fff', padding: 12, borderRadius: 8, border: `1px solid ${tema.borde}` }}>
                   <div style={{ fontSize: 12, color: '#888' }}>Conversión</div>
-                  <div style={{ fontWeight: 900, fontSize: 20, marginTop: 6 }}>3.8%</div>
-                  <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>Ticket promedio $84</div>
+                  <div style={{ fontWeight: 900 }}>5.6%</div>
                 </div>
               </div>
             </div>
 
-            <div style={{ background: '#fff', borderRadius: 12, padding: 14 }}>
-              <div style={{ fontWeight: 900 }}>Inventario</div>
-              <div style={{ fontSize: 13, color: '#666', marginTop: 6 }}>Alertas de stock, rotación y valor por categoría</div>
-              <div style={{ marginTop: 12 }}><BarSeries data={[120, 90, 60, 40, 80, 70]} color={tema.acento} height={84} /></div>
+            <div style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 12px 30px rgba(16,24,40,0.04)' }}>
+              <div style={{ fontWeight: 900 }}>Actividad reciente</div>
+              <div style={{ marginTop: 8, color: '#666' }}>Últimas acciones de usuarios y procesos</div>
             </div>
           </div>
 
-          <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: '#fff', padding: 14, borderRadius: 12 }}>
-              <div style={{ fontWeight: 900 }}>Resumen rápido</div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: 140, background: '#fafafa', padding: 10, borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: '#888' }}>Ingresos mes</div>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>$24,600</div>
-                </div>
-                <div style={{ flex: 1, minWidth: 140, background: '#fafafa', padding: 10, borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: '#888' }}>Órdenes</div>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>412</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ background: '#fff', padding: 14, borderRadius: 12, textAlign: 'center' }}>
-              <div style={{ fontWeight: 900 }}>Alertas</div>
-              <div style={{ marginTop: 10, color: '#d32f2f' }}>2 productos por debajo del stock mínimo</div>
+          <aside style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 12px 30px rgba(16,24,40,0.04)' }}>
+            <div style={{ fontWeight: 900 }}>Atajos</div>
+            <div style={{ marginTop: 8, color: '#666' }}>Backups · Importar · Exportar</div>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 13, color: '#888' }}>Último backup</div>
+              <div style={{ fontWeight: 800, marginTop: 6 }}>2025-10-20 02:12</div>
             </div>
           </aside>
         </section>
-
-        <footer style={{ marginTop: 'auto', color: '#666', fontSize: 13 }}>
-          <div>Nota: los gráficos son ejemplos mock. Conecta tus APIs para datos reales y quita las animaciones si necesitas render estático para pruebas.</div>
-        </footer>
       </main>
     </div>
   );
