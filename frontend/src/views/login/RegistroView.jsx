@@ -1,7 +1,7 @@
-// RegistroView.jsx
 import React, { useEffect, useState } from 'react';
 import { registro } from '../../services/api';
 import { temas } from '../../styles/temas';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const THEME_KEY = 'app_theme_selected';
 
@@ -10,6 +10,8 @@ const RegistroView = ({ onRegistered, onCancel }) => {
   const [nombre, setNombre] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [showPass2, setShowPass2] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,6 +61,24 @@ const RegistroView = ({ onRegistered, onCancel }) => {
     boxSizing: 'border-box'
   };
 
+  const inputContainer = {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center'
+  };
+
+  const eyeButtonStyle = {
+    position: 'absolute',
+    right: 12,
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: tema.texto,
+    fontSize: 18,
+    display: 'flex',
+    alignItems: 'center'
+  };
+
   return (
     <div style={{
       background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`,
@@ -105,10 +125,44 @@ const RegistroView = ({ onRegistered, onCancel }) => {
           <input style={inputStyle} type="text" placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
 
           <label style={{ fontSize: 13, color: '#444' }}>Contraseña</label>
-          <input style={inputStyle} type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} required />
+          <div style={inputContainer}>
+            <input
+              style={inputStyle}
+              type={showPass ? 'text' : 'password'}
+              placeholder="Contraseña"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              style={eyeButtonStyle}
+              onClick={() => setShowPass(!showPass)}
+              title={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            >
+              {showPass ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
 
           <label style={{ fontSize: 13, color: '#444' }}>Repetir contraseña</label>
-          <input style={inputStyle} type="password" placeholder="Repetir contraseña" value={password2} onChange={e => setPassword2(e.target.value)} required />
+          <div style={inputContainer}>
+            <input
+              style={inputStyle}
+              type={showPass2 ? 'text' : 'password'}
+              placeholder="Repetir contraseña"
+              value={password2}
+              onChange={e => setPassword2(e.target.value)}
+              required
+            />
+            <button
+              type="button"
+              style={eyeButtonStyle}
+              onClick={() => setShowPass2(!showPass2)}
+              title={showPass2 ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            >
+              {showPass2 ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button

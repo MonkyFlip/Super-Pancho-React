@@ -1,4 +1,6 @@
-# crear_db_controller.py
+# ---------------------------------------------
+# IMPORTACIONES
+# ---------------------------------------------
 from typing import Callable, Any, Dict, List, Tuple
 from datetime import datetime, timedelta, timezone
 import random
@@ -6,16 +8,45 @@ import logging
 import bcrypt
 from pymongo import ASCENDING, IndexModel
 
+# --- Importaciones añadidas del script de multimedia ---
+import io
+import numpy as np
+from PIL import Image
+import cv2
+import gridfs
+import os
+# ---------------------------------------------
+
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-DEFAULT_TOTAL_RECORDS = 500_000
+# ---------------------------------------------
+# CONSTANTES PRINCIPALES
+# ---------------------------------------------
+DEFAULT_TOTAL_RECORDS = 1_000_000
 MIN_TOTAL_RECORDS = 100
 BATCH_SIZE = 5000
 
 ROLES = ["administrador", "trabajador", "cliente"]
 DEFAULT_PASSWORD = "1234"
 
+# ---------------------------------------------
+# CONSTANTES DE MULTIMEDIA (#!NUEVO)
+# ---------------------------------------------
+IMG_ANCHO, IMG_ALTO = 128, 128
+VID_FPS = 10
+VID_DURACION = 2  # segundos
+
+# --- Cantidades de Multimedia ---
+TOTAL_IMAGENES_COLOR = 10_000
+TOTAL_FOTOS_RUIDO = 10_000
+TOTAL_VIDEOS = 5_000
+
+
+# =============================================
+# FUNCIONES AUXILIARES (Poblamiento Principal)
+# =============================================
 
 def _hash_password(password: str) -> bytes:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
@@ -94,7 +125,61 @@ def _batch_insert(collection, docs: List[Dict], batch_size: int = BATCH_SIZE) ->
     return inserted, failed
 
 
+# =============================================
+# FUNCIONES AUXILIARES DE MULTIMEDIA (#!NUEVO)
+# =============================================
+
+def _guardar_en_mongo_gridfs(fs: gridfs.GridFS, data_bytes, filename, tipo, content_type):
+    """Guarda un archivo binario directamente en MongoDB (GridFS)."""
+    fs.put(data_bytes, filename=filename, tipo=tipo, contentType=content_type)
+
+
+def _generar_imagen_color(fs: gridfs.GridFS, i: int):
+    """Genera una imagen de color sólido y la guarda en MongoDB."""
+    color = tuple(np.random.randint(0, 256, 3))
+    img = Image.new("RGB", (IMG_ANCHO, IMG_ALTO), color)
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    _guardar_en_mongo_gridfs(fs, buffer.getvalue(), f"imagen_{i:05}.png", "imagen", "image/png")
+
+
+def _generar_imagen_ruido(fs: gridfs.GridFS, i: int):
+    """Genera una imagen de ruido aleatorio y la guarda en MongoDB."""
+    ruido = np.random.randint(0, 256, (IMG_ALTO, IMG_ANCHO, 3), dtype=np.uint8)
+    img = Image.fromarray(ruido)
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    _guardar_en_mongo_gridfs(fs, buffer.getvalue(), f"foto_{i:05}.png", "foto", "image/png")
+
+
+def _generar_video(fs: gridfs.GridFS, i: int):
+    """Genera un video corto con colores aleatorios y lo guarda en MongoDB."""
+    nombre = f"video_{i:05}.mp4"
+    ruta_temporal = os.path.join(os.getcwd(), nombre)  # Ruta temporal
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    video = cv2.VideoWriter(ruta_temporal, fourcc, VID_FPS, (IMG_ANCHO, IMG_ALTO))
+
+    for _ in range(VID_FPS * VID_DURACION):
+        frame = np.random.randint(0, 256, (IMG_ALTO, IMG_ANCHO, 3), dtype=np.uint8)
+        video.write(frame)
+    video.release()
+
+    try:
+        with open(ruta_temporal, "rb") as f:
+            _guardar_en_mongo_gridfs(fs, f.read(), nombre, "video", "video/mp4")
+    finally:
+        # Asegurarse de borrar el archivo temporal
+        if os.path.exists(ruta_temporal):
+            os.remove(ruta_temporal)
+
+
+# =============================================
+# FUNCIONES DE CONTROL
+# =============================================
+
 def _colecciones_necesarias() -> List[str]:
+    # 'multimedia.files' y 'multimedia.chunks' son manejadas por GridFS
     return ["usuarios", "areas", "productos", "clientes", "ventas", "logs"]
 
 
@@ -126,6 +211,18 @@ def asegurar_base(get_db_callable: Callable[[], Any]) -> Dict[str, str]:
     ventas_idx = IndexModel([("created_at", ASCENDING)], unique=False, name="idx_ventas_created_at")
     logs_idx = IndexModel([("created_at", ASCENDING)], unique=False, name="idx_logs_created_at")
     areas_idx = IndexModel([("_id", ASCENDING)], unique=True, name="idx_areas_id")
+    
+    # (#!NUEVO) Índices para GridFS (MongoDB los maneja, pero aseguramos la colección)
+    try:
+        if "multimedia.files" not in existentes:
+             db.create_collection("multimedia.files")
+             db.create_collection("multimedia.chunks")
+             logger.info("Colecciones GridFS 'multimedia' creadas.")
+             # MongoDB crea automáticamente los índices correctos en 'multimedia.files' y 'multimedia.chunks'
+             # al instanciar gridfs.GridFS, pero esto asegura que existan.
+    except Exception as e:
+         logger.debug("GridFS collections: %s", e)
+
 
     try:
         db["usuarios"].create_indexes([usuarios_idx])
@@ -176,13 +273,83 @@ def _base_ya_poblada(db) -> Tuple[bool, int]:
             except Exception:
                 cnt = 0
         total_docs += cnt
+        
+    # (#!NUEVO) Chequear también GridFS
+    try:
+        if "multimedia.files" in existentes:
+            total_docs += int(db["multimedia.files"].count_documents({}))
+    except Exception:
+        pass # No es crítico si falla
+        
     return (total_docs > 0), total_docs
 
+
+# (#!NUEVO) Función dedicada para poblar multimedia
+def poblar_multimedia(db: Any) -> Dict[str, Any]:
+    """
+    Puebla la colección 'multimedia' (GridFS) con imágenes y videos.
+    """
+    logger.info("Iniciando poblamiento de multimedia (GridFS)...")
+    fs = gridfs.GridFS(db, collection="multimedia")
+    
+    # Chequear si ya hay multimedia para no duplicar
+    try:
+        if fs.exists():
+             count = db["multimedia.files"].count_documents({})
+             if count > 0:
+                logger.warning("Colección 'multimedia' (GridFS) ya contiene %s archivos. Se omite poblamiento.", count)
+                return {"imagenes": 0, "fotos": 0, "videos": 0, "status": "omitido"}
+    except Exception as e:
+        logger.error("Error al chequear GridFS: %s", e)
+        # Continuar de todos modos, pero loguear el error
+
+    # 1. Imágenes de color
+    logger.info("🎨 Generando y guardando imágenes de color...")
+    for i in range(1, TOTAL_IMAGENES_COLOR + 1):
+        try:
+            _generar_imagen_color(fs, i)
+            if i % 1000 == 0:
+                logger.info("✅ %s/%s imágenes guardadas", i, TOTAL_IMAGENES_COLOR)
+        except Exception as e:
+            logger.warning("Fallo al generar imagen color %s: %s", i, e)
+
+    # 2. Fotos de ruido
+    logger.info("📸 Generando y guardando fotos (ruido)...")
+    for i in range(1, TOTAL_FOTOS_RUIDO + 1):
+        try:
+            _generar_imagen_ruido(fs, i)
+            if i % 1000 == 0:
+                logger.info("✅ %s/%s fotos guardadas", i, TOTAL_FOTOS_RUIDO)
+        except Exception as e:
+            logger.warning("Fallo al generar foto ruido %s: %s", i, e)
+
+    # 3. Videos
+    logger.info("🎥 Generando y guardando videos...")
+    for i in range(1, TOTAL_VIDEOS + 1):
+        try:
+            _generar_video(fs, i)
+            if i % 100 == 0:
+                logger.info("🎬 %s/%s videos guardados", i, TOTAL_VIDEOS)
+        except Exception as e:
+            logger.warning("Fallo al generar video %s: %s", i, e)
+    
+    logger.info("🎉 ¡Poblamiento de multimedia completo!")
+    return {
+        "imagenes_creadas": TOTAL_IMAGENES_COLOR,
+        "fotos_creadas": TOTAL_FOTOS_RUIDO,
+        "videos_creados": TOTAL_VIDEOS,
+        "status": "completado"
+    }
+
+# =============================================
+# FUNCIÓN PRINCIPAL DE POBLAMIENTO
+# =============================================
 
 def crear_y_poblar_db(get_db_callable: Callable[[], Any], total_records: int = DEFAULT_TOTAL_RECORDS) -> Dict[str, Any]:
     """
     Crea/asegura colecciones e índices y luego puebla la base con `total_records`
-    distribuidos equitativamente entre las colecciones objetivo. Inserciones por lotes.
+    distribuidos equitativamente.
+    Finalmente, puebla GridFS con archivos multimedia.
     """
     db = get_db_callable()
     if db is None:
@@ -238,8 +405,8 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any], total_records: int = D
             deficit -= take
             if deficit <= 0:
                 break
-        if deficit > 0:
-            counts["clientes"] += deficit
+            if deficit > 0:
+                counts["clientes"] += deficit
 
     # Evitar negativos
     for k in counts:
@@ -468,7 +635,18 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any], total_records: int = D
         logger.exception("Fallo al poblar logs: %s", e)
         failed_summary["logs"] += counts.get("logs", 0)
 
-    # Resultado final
+
+    # 5) (#!NUEVO) Poblar Multimedia (GridFS)
+    # Esto se ejecuta DESPUÉS de poblar las colecciones principales
+    try:
+        resumen_multimedia = poblar_multimedia(db)
+        logger.info("Resumen de multimedia: %s", resumen_multimedia)
+    except Exception as e:
+        logger.exception("Fallo catastrófico al poblar multimedia: %s", e)
+        resumen_multimedia = {"status": "fallido", "error": str(e)}
+
+
+    # 6) Resultado final
     inserted_total = sum(summary.values())
     failed_total = sum(failed_summary.values())
 
@@ -476,7 +654,8 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any], total_records: int = D
         **summary,
         "inserted_total": inserted_total,
         "failed_total": failed_total,
-        "failed_details": failed_summary
+        "failed_details": failed_summary,
+        "multimedia_summary": resumen_multimedia  # (#!NUEVO)
     }
     logger.info("Poblamiento completo. Resumen: %s", result)
     return result

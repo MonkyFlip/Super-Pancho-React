@@ -12,8 +12,15 @@ import DashboardP from './productos/DashboardP';
 import DashboardA from './areas/DashboardA';
 import DashboardT from './trabajadores/DashboardT';
 
+// --- 1. AÑADIR IMPORTACIONES MULTIMEDIA ---
+import ImagenesView from './multimedia/ImagenesView';
+import FotosView from './multimedia/FotosView';
+import VideosView from './multimedia/VideosView';
+// ------------------------------------------
+
 const THEME_KEY = 'app_theme_selected';
 
+// ... (el resto de tus componentes internos como AnimatedSparkline, BarSeries, KPI, etc. quedan igual) ...
 const AnimatedSparkline = ({ data = [], color = '#1976d2', height = 80 }) => {
   if (!data.length) return <div style={{ height }}>Sin datos</div>;
   const vals = data.map(v => Number(v) || 0);
@@ -227,6 +234,35 @@ const Dashboard = () => {
     );
   }
 
+  // --- 2. AÑADIR LÓGICA DE RUTAS MULTIMEDIA ---
+  // (Colócalo aquí, después del último 'if' de 'trabajadores')
+  if (second === 'multimedia') {
+    let ViewComponent = null;
+    
+    // El 'third' componente de la ruta (ej: 'imagenes')
+    if (third === 'imagenes') {
+      ViewComponent = ImagenesView;
+    } else if (third === 'fotos') {
+      ViewComponent = FotosView;
+    } else if (third === 'videos') {
+      ViewComponent = VideosView;
+    }
+
+    // Si encontramos un componente que coincida, lo renderizamos
+    if (ViewComponent) {
+      return (
+        <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+          <NavAdmin />
+          <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+            <ViewComponent />
+          </main>
+        </div>
+      );
+    }
+  }
+  // --------------------------------------------------
+
+
   // Si no coincide con subruta conocida, renderizar el contenido principal del admin (dashboard principal)
   // mock data
   const ventas = [120, 180, 95, 220, 160, 200, 240, 180, 210, 230];
@@ -236,6 +272,8 @@ const Dashboard = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
       <NavAdmin />
+      
+      {/* ... (El resto del 'return' final queda exactamente igual) ... */}
       <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div>

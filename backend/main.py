@@ -3,9 +3,12 @@ from dotenv import load_dotenv
 import os
 import logging
 import json
-from flask import Flask, request, jsonify, make_response
+import gridfs  # <--- AÑADIDO
+import math    # <--- AÑADIDO
+from flask import Flask, request, jsonify, make_response, send_file  # <--- send_file AÑADIDO
 from flask_cors import CORS
 from bson import json_util
+from bson.objectid import ObjectId, InvalidId  # <--- AÑADIDO
 from pymongo import ASCENDING
 
 # cargar variables de entorno
@@ -375,6 +378,114 @@ def debug_cookies():
     except Exception as e:
         logger.exception("Error en /debug_cookies: %s", e)
         return jsonify({}), 500
+
+# ----------------------------------------------------------
+# --- NUEVOS ENDPOINTS MULTIMEDIA (Basados en tu Controller) ---
+# ----------------------------------------------------------
+
+@app.route('/multimedia/archivos', methods=['GET'])
+def listar_archivos_multimedia():
+    """
+    Devuelve una lista paginada de archivos multimedia (solo metadatos).
+    Query Params:
+    - tipo (string, requerido): "imagen", "video", "foto"
+    - page (int, default 1): Número de página
+    - limit (int, default 20): Archivos por página
+    """
+    try:
+        db = get_db()
+        fs = gridfs.GridFS(db, collection="multimedia")
+
+        # --- Validación de Parámetros ---
+        tipo = request.args.get('tipo')
+        if not tipo:
+            return jsonify({"error": "El parámetro 'tipo' es requerido (ej: 'imagen', 'video')"}), 400
+
+        try:
+            page = int(request.args.get('page', 1))
+            limit = int(request.args.get('limit', 20))
+            page = max(1, page)
+            limit = max(1, min(limit, 100)) # Limitar a 100 max por request
+        except ValueError:
+            return jsonify({"error": "'page' y 'limit' deben ser números enteros"}), 400
+
+        skip = (page - 1) * limit
+        query = {"tipo": tipo}
+
+        # --- Consultas a la DB ---
+        total_count = db["multimedia.files"].count_documents(query)
+        
+        # Usamos fs.find para obtener los metadatos de GridFS
+        cursor = fs.find(query).skip(skip).limit(limit)
+
+        # Serializar los metadatos para la respuesta JSON
+        archivos_list = []
+        for f in cursor:
+            archivos_list.append({
+                "id": str(f._id),
+                "filename": f.filename,
+                "content_type": f.content_type,
+                "length": f.length,
+                "upload_date": f.upload_date.isoformat() if f.upload_date else None,
+                "tipo": f.tipo
+            })
+            
+        total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+
+        # --- Respuesta ---
+        return jsonify({
+            "ok": True,
+            "archivos": archivos_list,
+            "pagination": {
+                "total_count": total_count,
+                "current_page": page,
+                "page_size": limit,
+                "total_pages": total_pages
+            }
+        }), 200
+
+    except Exception as e:
+        logger.exception("Error en /multimedia/archivos: %s", e)
+        return jsonify({"error": "Error interno del servidor", "detalle": str(e)}), 500
+
+
+@app.route('/multimedia/archivo/<string:file_id>', methods=['GET'])
+def ver_archivo_multimedia(file_id):
+    """
+    Obtiene el contenido binario de un archivo de GridFS por su ID.
+    Esto puede ser usado directamente en el 'src' de un tag <img> o <video>.
+    """
+    try:
+        db = get_db()
+        fs = gridfs.GridFS(db, collection="multimedia")
+        
+        try:
+            oid = ObjectId(file_id)
+        except InvalidId:
+            return jsonify({"error": "ID de archivo inválido"}), 400
+
+        try:
+            # fs.get() busca el archivo por su _id en la colección .files
+            grid_out = fs.get(oid)
+            
+            # Usamos send_file para streamear el archivo al cliente.
+            # grid_out se comporta como un objeto 'file-like'.
+            # 'as_attachment=False' sugiere al navegador mostrarlo (inline)
+            # en lugar de descargarlo.
+            return send_file(
+                grid_out,
+                mimetype=grid_out.content_type,
+                as_attachment=False,
+                download_name=grid_out.filename
+            )
+            
+        except gridfs.errors.NoFile:
+            return jsonify({"error": "Archivo no encontrado"}), 404
+
+    except Exception as e:
+        logger.exception(f"Error en /multimedia/archivo/{file_id}: %s", e)
+        return jsonify({"error": "Error interno del servidor", "detalle": str(e)}), 500
+
 
 # -----------------------
 # Main

@@ -142,7 +142,7 @@ const AvisoView = () => {
           </div>
 
           <p style={{ color: '#555', marginTop: 8 }}>
-            Al pulsar el botón se creará la estructura y se poblará automáticamente con 500,000 registros distribuidos equitativamente.
+            Al pulsar el botón se creará la estructura y se poblará automáticamente con 1,000,000 registros distribuidos equitativamente.
           </p>
 
           <div style={{ marginTop: 18, display: 'flex', gap: 12 }}>
@@ -161,7 +161,7 @@ const AvisoView = () => {
                 boxShadow: procesando ? 'none' : `0 8px 20px ${tema.acento}33`
               }}
             >
-              {procesando ? 'Creando y poblando…' : 'Crear y poblar base (500k)'}
+              {procesando ? 'Creando y poblando…' : 'Crear y poblar base (1M)'}
             </button>
           </div>
 
@@ -248,7 +248,7 @@ const AvisoView = () => {
           </div>
 
           <div style={{ marginTop: 16, fontSize: 12, color: '#889', lineHeight: 1.3 }}>
-            Recomendación: el poblamiento con 500k registros puede tardar y consumir recursos. Si necesitas validar rápidamente, omite y usa un dataset más pequeño.
+            Recomendación: el poblamiento con 1M registros puede tardar y consumir recursos. Si necesitas validar rápidamente, omite y usa un dataset más pequeño.
           </div>
         </div>
       </div>
