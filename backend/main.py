@@ -6,6 +6,7 @@ import json
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from bson import json_util
+from pymongo import ASCENDING
 
 # cargar variables de entorno
 load_dotenv()
@@ -207,32 +208,82 @@ def coleccion_sample(nombre):
 @app.route('/usuarios', methods=['GET'])
 def usuarios_list():
     """
-    Endpoint público de ejemplo que devuelve los primeros documentos de la colección 'usuarios'.
+    Endpoint público que devuelve docs paginados y el conteo total.
     Acepta query params:
-      - limit (int, default 50, max 200)
-      - q (string, opcional) para filtrar por nombre/email (básico, case-insensitive, contiene)
+      - limit (int, default 10, max 1000)
+      - skip (int, default 0) OR page (1-based)
+      - q (string) búsqueda simple
     """
     try:
         db = get_db()
         if db is None:
             return jsonify({"error": "DB no disponible"}), 500
 
+        # limit
         try:
-            limit = int(request.args.get('limit') or 50)
-            limit = max(1, min(limit, 200))
+            limit = int(request.args.get('limit') or request.args.get('perPage') or 10)
         except Exception:
-            limit = 50
+            limit = 10
+        limit = max(1, min(limit, 1000))
+
+        # skip via skip or page
+        skip = 0
+        if request.args.get('skip') is not None:
+            try:
+                skip = int(request.args.get('skip') or 0)
+            except Exception:
+                skip = 0
+        elif request.args.get('page') is not None:
+            try:
+                page = int(request.args.get('page') or 1)
+                page = max(1, page)
+                skip = (page - 1) * limit
+            except Exception:
+                skip = 0
 
         q = request.args.get('q') or None
 
         query = {}
         if q:
-            # búsqueda simple en nombre o email
-            query = {"$or": [{"nombre": {"$regex": q, "$options": "i"}}, {"email": {"$regex": q, "$options": "i"}}]}
+            # búsqueda simple en usuario, nombre o email
+            query = {
+                "$or": [
+                    {"usuario": {"$regex": q, "$options": "i"}},
+                    {"nombre": {"$regex": q, "$options": "i"}},
+                    {"email": {"$regex": q, "$options": "i"}}
+                ]
+            }
 
-        cursor = db['usuarios'].find(query).limit(limit)
+        usuarios_col = db['usuarios']
+
+        # obtener conteo total (rápido si hay índices adecuados)
+        total = usuarios_col.count_documents(query)
+
+        # obtener documentos paginados; ordenar por _id ascendente para consistencia
+        cursor = usuarios_col.find(query, {"password_hash": 0}).sort([("_id", ASCENDING)]).skip(skip).limit(limit)
         docs = list(cursor)
-        return jsonify({"ok": True, "count": len(docs), "docs": _serialize_for_json(docs)}), 200
+
+        # serializar ObjectId y fechas de forma sencilla
+        def _to_serializable(doc):
+            d = dict(doc)
+            if "_id" in d:
+                try:
+                    d["_id"] = str(d["_id"])
+                except Exception:
+                    pass
+            for k in ("created_at", "last_login", "updated_at"):
+                if k in d and hasattr(d[k], "isoformat"):
+                    try:
+                        d[k] = d[k].isoformat()
+                    except Exception:
+                        pass
+            d.pop("password_hash", None)
+            return d
+
+        serial = [_to_serializable(d) for d in docs]
+
+        return jsonify({"ok": True, "count": total, "docs": serial, "limit": limit, "skip": skip}), 200
+
     except Exception as e:
         logger.exception("Error en /usuarios: %s", e)
         return jsonify({"error": str(e)}), 500
@@ -272,6 +323,7 @@ def login():
         if expires_in:
             resp_payload["expiresIn"] = expires_in
 
+        # Log de auditoría mínimo
         try:
             rol = serialized_user.get("rol") if isinstance(serialized_user, dict) else None
             logger.info("Login exitoso: usuario=%s rol=%s desde IP=%s", usuario, str(rol), request.remote_addr or "desconocida")

@@ -5,7 +5,12 @@ import { crearUsuario } from '../../../services/api';
 import { isAuthenticated } from '../../../services/auth';
 
 const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
-  const [form, setForm] = useState({ nombre: '', email: '', rol: '', telefono: '', activo: true });
+  const [form, setForm] = useState({
+    usuario: '',
+    password: '',
+    rol: 'cliente',
+    activo: true
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const mountedRef = useRef(false);
@@ -17,18 +22,21 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
 
   useEffect(() => {
     if (!visible) {
-      setForm({ nombre: '', email: '', rol: '', telefono: '', activo: true });
+      setForm({
+        usuario: '',
+        password: '',
+        rol: 'cliente',
+        activo: true
+      });
       setError(null);
     }
   }, [visible]);
 
-  // Escuchar cambios en localStorage para invalidar sesión si se cierra en otra pestaña
   useEffect(() => {
     const onAuthStorage = (e) => {
       if (!e) return;
       if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
         if (!isAuthenticated()) {
-          // cerrar modal y forzar login
           try { onClose?.(); } catch {}
           window.location.hash = '#/login';
         }
@@ -40,30 +48,42 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
 
   if (!visible) return null;
 
+  const validate = () => {
+    if (!form.usuario || form.usuario.trim().length < 3) return 'Usuario: mínimo 3 caracteres';
+    if (!form.password || form.password.length < 4) return 'Password: mínimo 4 caracteres';
+    if (!['administrador', 'trabajador', 'cliente'].includes(form.rol)) return 'Rol inválido';
+    return null;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    // Validar sesión antes de enviar
     if (!isAuthenticated()) {
       setError('Sesión no válida. Por favor, inicia sesión de nuevo.');
       window.location.hash = '#/login';
       return;
     }
 
-    if (!form.nombre || !form.email) {
-      setError('Nombre y email son requeridos');
+    const vErr = validate();
+    if (vErr) {
+      setError(vErr);
       return;
     }
 
     setLoading(true);
     try {
-      await crearUsuario(form);
+      // payload coincide con UsuarioCreate: { usuario, password, rol, activo }
+      await crearUsuario({
+        usuario: form.usuario.trim(),
+        password: form.password,
+        rol: form.rol,
+        activo: !!form.activo
+      });
       if (typeof onSaveSuccess === 'function') onSaveSuccess();
     } catch (err) {
       const status = err?.response?.status;
       const serverMsg = err?.response?.data?.error || err.message || 'Error al crear usuario';
-      // Si el backend indica 401/403, forzamos re-login
       if (status === 401 || status === 403) {
         setError('Sesión expirada o no autorizada. Redirigiendo a login...');
         try { onClose?.(); } catch {}
@@ -86,7 +106,7 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
             </div>
             <div>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Nuevo usuario</div>
-              <div style={{ fontSize: 13, color: '#666' }}>Rellena los datos para crear un usuario.</div>
+              <div style={{ fontSize: 13, color: '#666' }}>Crea un usuario con los campos del modelo</div>
             </div>
           </div>
 
@@ -96,12 +116,40 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
         </div>
 
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-          <input value={form.nombre} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Nombre completo" style={inputStyle(tema)} />
-          <input value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} placeholder="correo@dominio.com" style={inputStyle(tema)} />
-          <input value={form.telefono} onChange={(e) => setForm(f => ({ ...f, telefono: e.target.value }))} placeholder="Teléfono" style={inputStyle(tema)} />
-          <input value={form.rol} onChange={(e) => setForm(f => ({ ...f, rol: e.target.value }))} placeholder="Rol (ej. administrador)" style={inputStyle(tema)} />
+          <label style={{ fontSize: 13, color: '#444' }}>Usuario</label>
+          <input
+            value={form.usuario}
+            onChange={(e) => setForm(f => ({ ...f, usuario: e.target.value }))}
+            placeholder="usuario (3-64 caracteres)"
+            style={inputStyle(tema)}
+          />
+
+          <label style={{ fontSize: 13, color: '#444' }}>Password</label>
+          <input
+            type="password"
+            value={form.password}
+            onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
+            placeholder="mínimo 4 caracteres"
+            style={inputStyle(tema)}
+          />
+
+          <label style={{ fontSize: 13, color: '#444' }}>Rol</label>
+          <select
+            value={form.rol}
+            onChange={(e) => setForm(f => ({ ...f, rol: e.target.value }))}
+            style={{ ...inputStyle(tema), padding: 10 }}
+          >
+            <option value="administrador">administrador</option>
+            <option value="trabajador">trabajador</option>
+            <option value="cliente">cliente</option>
+          </select>
+
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="checkbox" checked={form.activo} onChange={(e) => setForm(f => ({ ...f, activo: e.target.checked }))} /> Activo
+            <input
+              type="checkbox"
+              checked={form.activo}
+              onChange={(e) => setForm(f => ({ ...f, activo: e.target.checked }))}
+            /> Activo
           </label>
         </div>
 
@@ -120,7 +168,7 @@ const backdropStyle = () => ({
   position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', background: 'rgba(8,12,20,0.3)', zIndex: 8000
 });
 const modalStyle = (tema) => ({
-  width: 680, maxWidth: 'calc(100% - 32px)', background: '#fff', padding: 18, borderRadius: 12, border: `1px solid ${tema.borde}`, boxShadow: '0 20px 48px rgba(16,24,40,0.08)'
+  width: 520, maxWidth: 'calc(100% - 32px)', background: '#fff', padding: 18, borderRadius: 12, border: `1px solid ${tema.borde}`, boxShadow: '0 20px 48px rgba(16,24,40,0.08)'
 });
 const inputStyle = (tema) => ({ padding: 10, borderRadius: 8, border: `1px solid ${tema.borde}`, outline: 'none', background: '#fff', color: tema.texto });
 const primaryBtnStyle = (tema) => ({
