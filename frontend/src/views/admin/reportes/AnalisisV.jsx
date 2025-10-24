@@ -1,375 +1,530 @@
 // src/views/admin/reportes/AnalisisV.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Scatter, Line, Bar } from 'react-chartjs-2';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { temas } from '../../../styles/temas';
+import { ventasRegresionSimple, ventasRegresionMultiple } from '../../../services/api';
+import { FaSync, FaChartLine, FaLayerGroup, FaDownload, FaInfoCircle } from 'react-icons/fa';
+import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../../services/auth';
+
+import {
+  Chart as ChartJS,
+  LinearScale,
+  PointElement,
+  LineElement,
+  CategoryScale,
+  TimeScale,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Scatter, Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
-import Chart from 'chart.js/auto';
-import { FaSyncAlt, FaPlay, FaChartLine } from 'react-icons/fa';
-import { ventasRegresionSimple, ventasRegresionMultiple, getMe } from '../../../services/api';
-import { getStoredUser, isAuthenticated, logout } from '../../../services/auth';
 
-const DEFAULT_LIMIT = 1000;
-const SESSION_PING_MS = 4 * 60 * 1000; // 4 minutos
+ChartJS.register(
+  LinearScale,
+  PointElement,
+  LineElement,
+  CategoryScale,
+  TimeScale,
+  Tooltip,
+  Legend,
+  Filler
+);
 
-const numberFmt = (v) => (Number.isFinite(v) ? Number(v).toFixed(2) : String(v));
+const THEME_KEY = 'app_theme_selected';
 
-const cardStyle = (theme) => ({
-  background: theme?.bgCard || '#fff',
-  border: `1px solid ${theme?.borde || '#e6eef9'}`,
-  borderRadius: 10,
-  padding: 12,
-  boxShadow: '0 8px 20px rgba(16,24,40,0.04)'
-});
+const formatForDisplay = (v) => {
+  if (v == null) return '';
+  if (typeof v === 'string') return v;
+  try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+};
 
-const AnalisisV = ({ theme: injectedTheme } = {}) => {
-  const theme = injectedTheme || {
-    fondo: '#f6f8fa',
-    secundario: '#eef2ff',
-    primario: '#2563eb',
-    borde: '#e6eef9',
-    texto: '#0f1720',
-    bgCard: '#fff'
-  };
+const style = {
+  container: { padding: 20 },
+  card: (tema) => ({
+    background: tema.fondo_card || tema.fondo || '#ffffff',
+    padding: 14,
+    borderRadius: 12,
+    boxShadow: tema.sombra || '0 8px 24px rgba(8,15,30,0.06)',
+    border: `1px solid ${tema.borde || '#eef2f7'}`
+  }),
+  headerRow: (tema) => ({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }),
+  title: (tema) => ({ fontSize: 18, fontWeight: 700, color: tema.texto }),
+  btnPrimary: (tema) => ({
+    padding: '8px 12px',
+    borderRadius: 10,
+    border: 'none',
+    background: tema.primario || '#2563eb',
+    color: '#fff',
+    cursor: 'pointer'
+  }),
+  btnGhost: (tema) => ({
+    padding: '8px 10px',
+    borderRadius: 10,
+    border: `1px solid ${tema.borde}`,
+    background: 'transparent',
+    color: tema.texto,
+    cursor: 'pointer'
+  }),
+  smallMuted: (tema) => ({ color: tema.subtexto || '#6b7280', fontSize: 13 })
+};
 
-  const mountedRef = useRef(true);
-  const keepAliveRef = useRef(null);
-
-  const [mode, setMode] = useState('simple'); // simple | multiple
-  const [xField, setXField] = useState('fecha_ordinal');
-  const [yField, setYField] = useState('total');
-  const [features, setFeatures] = useState(['precio', 'cantidad']);
-  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+export default function AnalisisV() {
+  const [temaKey, setTemaKey] = useState(() => {
+    try { return localStorage.getItem(THEME_KEY) || 'bosque_claro'; } catch { return 'bosque_claro'; }
+  });
+  const tema = temas[temaKey] || temas.bosque_claro;
 
   const [loading, setLoading] = useState(false);
-  const [dataSimple, setDataSimple] = useState(null);
-  const [dataMultiple, setDataMultiple] = useState(null);
   const [error, setError] = useState(null);
-  const [animate, setAnimate] = useState(false);
+  const [simpleResult, setSimpleResult] = useState(null);
+  const [multipleResult, setMultipleResult] = useState(null);
+  const [mode, setMode] = useState('simple'); // 'simple' | 'multiple'
+  const mountedRef = useRef(false);
+
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
   useEffect(() => {
-    mountedRef.current = true;
-    return () => { mountedRef.current = false; if (keepAliveRef.current) clearInterval(keepAliveRef.current); };
+    const onStorage = (e) => {
+      if (!e) return;
+      if (e.key === THEME_KEY) setTemaKey(e.newValue || 'bosque_claro');
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  /**
-   * Keep-alive / session validation
-   * - Llama a /me periódicamente para validar token y refrescar estado.
-   * - Si no está autenticado o /me falla con 401, se hace logout local.
-   */
-  const ensureSession = useCallback(async () => {
+  const ensureAuth = useCallback(() => {
+    if (!isAuthenticated()) {
+      window.location.hash = '#/login';
+      return false;
+    }
+    const user = getStoredUser();
+    if (!user) { window.location.hash = '#/login'; return false; }
+    const rolLocal = user?.rol ?? user?.role ?? '';
+    const isAdminLocal = String(rolLocal).toLowerCase().includes('admin');
+    if (!isAdminLocal) {
+      window.location.hash = getHomeRouteForUser(user) || '#/login';
+      return false;
+    }
+    return true;
+  }, []);
+
+  const mapSimpleToSeries = useCallback((body) => {
+    if (!body || !body.ok) return { points: [] };
+    const xs = (body.samples && body.samples.x) || [];
+    const ys = (body.samples && body.samples.y) || [];
+    const y_pred = (body.samples && body.samples.y_pred) || [];
+    const points = xs.map((x, i) => ({ x: Number(x) * 1000, y: Number(ys[i] ?? null), y_pred: Number(y_pred[i] ?? null) }));
+    return { points };
+  }, []);
+
+  const mapMultipleRespToSeries = useCallback((body) => {
+    if (!body || !body.ok) return { features: [], series: [], targetSeries: { data: [] }, predSeries: { data: [] }, coefs: {}, intercept: null, X_matrix: [], y: [], y_pred: [] };
+    const features = body.features || [];
+    const X = (body.samples && body.samples.X_matrix) || [];
+    const y = (body.samples && body.samples.y) || [];
+    const y_pred = (body.samples && body.samples.y_pred) || [];
+    const coefs = body.coef || {};
+    const intercept = body.intercept ?? null;
+    const series = features.map((f, idx) => ({
+      name: f,
+      data: X.map((row, i) => ({ x: i, y: row[idx] != null ? Number(row[idx]) : null }))
+    }));
+    const targetSeries = { name: 'target', data: y.map((val, i) => ({ x: i, y: Number(val) })) };
+    const predSeries = { name: 'y_pred', data: y_pred.map((val, i) => ({ x: i, y: Number(val) })) };
+    return { features, series, targetSeries, predSeries, coefs, intercept, X_matrix: X, y, y_pred };
+  }, []);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      if (!isAuthenticated()) {
-        // no autenticado localmente -> forzar logout/redirect
-        await logout({ redirect: true });
-        return;
-      }
-      // si hay token, validar con backend
-      await getMe(); // si falla con 401 el interceptor o caller manejará
+      const simplePayload = { collection: 'ventas', x_field: 'fecha_ordinal', y_field: 'total', limit: 1000 };
+      const respSimple = await ventasRegresionSimple(simplePayload);
+      const bodySimple = respSimple?.data ?? respSimple;
+      setSimpleResult({ raw: bodySimple, mapped: mapSimpleToSeries(bodySimple) });
+
+      const multiplePayload = { collection: 'ventas', features: ['items_count', 'sum_precio', 'avg_precio'], target: 'total', limit: 1000 };
+      const respMult = await ventasRegresionMultiple(multiplePayload);
+      const bodyMult = respMult?.data ?? respMult;
+      setMultipleResult({ raw: bodyMult, mapped: mapMultipleRespToSeries(bodyMult) });
+
     } catch (err) {
-      // Si getMe falla, forzamos limpieza y redirección
-      try { await logout({ redirect: true }); } catch (e) { /* noop */ }
+      const server = err.serverData ?? err.response?.data ?? err.message ?? String(err);
+      setError(server);
+    } finally {
+      if (mountedRef.current) setLoading(false);
     }
+  }, [mapSimpleToSeries, mapMultipleRespToSeries]);
+
+  useEffect(() => {
+    if (!ensureAuth()) return;
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    // Ejecutar al montar y programar ping periódico
-    ensureSession();
-    keepAliveRef.current = setInterval(() => ensureSession(), SESSION_PING_MS);
-    return () => { if (keepAliveRef.current) clearInterval(keepAliveRef.current); };
-  }, [ensureSession]);
+  const handleRefresh = useCallback(() => {
+    if (!ensureAuth()) return;
+    fetchAll();
+  }, [ensureAuth, fetchAll]);
 
-  const fetchSimple = useCallback(async (opts = {}) => {
-    setError(null);
-    setLoading(true);
-    try {
-      const body = opts.body || { collection: 'ventas', x_field: xField, y_field: yField, limit: limit };
-      const res = await ventasRegresionSimple(body);
-      if (mountedRef.current) setDataSimple(res.data ?? res);
-    } catch (e) {
-      if (mountedRef.current) setError(e?.response?.data ?? e.message ?? String(e));
-    } finally {
-      if (mountedRef.current) setLoading(false);
-    }
-  }, [xField, yField, limit]);
+  const downloadCSV = useCallback((rows, headers = []) => {
+    if (!rows || !rows.length) return;
+    const csvRows = [];
+    if (headers.length) csvRows.push(headers.join(','));
+    rows.forEach(r => {
+      csvRows.push(Object.values(r).map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `regresion_${mode}_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [mode]);
 
-  const fetchMultiple = useCallback(async (opts = {}) => {
-    setError(null);
-    setLoading(true);
-    try {
-      const body = opts.body || { collection: 'ventas', features: features, target: yField, limit: limit };
-      const res = await ventasRegresionMultiple(body);
-      if (mountedRef.current) setDataMultiple(res.data ?? res);
-    } catch (e) {
-      if (mountedRef.current) setError(e?.response?.data ?? e.message ?? String(e));
-    } finally {
-      if (mountedRef.current) setLoading(false);
-    }
-  }, [features, yField, limit]);
-
-  // initial load & when mode/params change
-  useEffect(() => {
-    if (mode === 'simple') fetchSimple();
-    else fetchMultiple();
-  }, [mode, fetchSimple, fetchMultiple]);
-
-  // build datasets for simple regression
-  const simpleChart = useMemo(() => {
-    if (!dataSimple || !dataSimple.samples) return null;
-    const xs = Array.isArray(dataSimple.samples.x) ? dataSimple.samples.x.map(Number) : [];
-    const ys = Array.isArray(dataSimple.samples.y) ? dataSimple.samples.y.map(Number) : [];
-    const ypred = Array.isArray(dataSimple.samples.y_pred) ? dataSimple.samples.y_pred.map(Number) : [];
-
-    const points = xs.map((x, i) => ({ x, y: ys[i] })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
-    const linePoints = xs.map((x, i) => ({ x, y: ypred[i] })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
-
+  // --- Chart builders with white background and visible prediction line ---
+  const buildSimpleChartData = useCallback(() => {
+    const pts = simpleResult?.mapped?.points || [];
     return {
-      data: {
-        datasets: [
-          {
-            label: 'Observado',
-            data: points,
-            backgroundColor: theme.primario,
-            pointRadius: 4,
-            showLine: false,
-            type: 'scatter'
-          },
-          {
-            label: 'Predicción',
-            data: linePoints.sort((a,b)=>a.x-b.x),
-            borderColor: '#ef4444',
-            backgroundColor: 'rgba(239,68,68,0.06)',
-            fill: false,
-            tension: 0.2,
-            pointRadius: 0,
-            type: 'line'
-          }
-        ]
-      },
-      meta: {
-        n: dataSimple.n,
-        intercept: dataSimple.intercept,
-        coef: dataSimple.coef,
-        r2: dataSimple.r2
-      }
-    };
-  }, [dataSimple, theme.primario]);
-
-  // build datasets for multiple regression
-  const multipleCharts = useMemo(() => {
-    if (!dataMultiple || !Array.isArray(dataMultiple.samples)) return null;
-    const samples = dataMultiple.samples || [];
-    const firstFeature = dataMultiple.features && dataMultiple.features.length ? dataMultiple.features[0] : Object.keys(samples[0]?.x || {})[0];
-    const scatter = samples.map(s => ({ x: Number(s.x[firstFeature] ?? Object.values(s.x)[0]), y: Number(s.y) })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
-    const pred = samples.map(s => ({ x: Number(s.x[firstFeature] ?? Object.values(s.x)[0]), y: Number(s.y_pred) })).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
-    const residuals = samples.map((s, i) => Math.abs(Number(s.y) - Number(s.y_pred)));
-
-    return {
-      scatter: {
-        data: {
-          datasets: [
-            { label: 'Observado', data: scatter, pointRadius: 4, backgroundColor: theme.primario, type: 'scatter' },
-            { label: 'Predicho', data: pred.sort((a,b)=>a.x-b.x), borderColor: '#ef4444', type: 'line', tension: 0.2, pointRadius: 0 }
-          ]
+      datasets: [
+        {
+          label: 'Observado',
+          data: pts.map(p => ({ x: p.x, y: p.y })),
+          backgroundColor: 'rgba(30,64,175,0.95)',
+          borderColor: 'rgba(30,64,175,0.95)',
+          showLine: false,
+          pointRadius: 3,
         },
-        meta: { feature: firstFeature }
-      },
-      residuals: {
-        data: {
-          labels: samples.map((_, i) => `#${i+1}`),
-          datasets: [{ label: 'Residual (abs)', data: residuals, backgroundColor: 'rgba(99,102,241,0.9)' }]
-        },
-        meta: {}
-      },
-      summary: {
-        n: dataMultiple.n,
-        intercept: dataMultiple.intercept,
-        coef: dataMultiple.coef,
-        r2: dataMultiple.r2,
-        features: dataMultiple.features
-      }
+        {
+          label: 'Predicción',
+          data: pts.map(p => ({ x: p.x, y: p.y_pred })),
+          borderColor: 'rgba(5,150,105,0.98)',
+          backgroundColor: 'rgba(5,150,105,0.12)',
+          pointRadius: 0,
+          tension: 0.25,
+          showLine: true,
+          borderWidth: 3,
+          fill: false,
+        }
+      ]
     };
-  }, [dataMultiple, theme.primario]);
+  }, [simpleResult]);
 
-  const commonOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
+  const simpleOptions = {
+    parsing: false,
     plugins: {
-      legend: { display: true, labels: { color: theme.texto } },
+      legend: { display: true, labels: { boxWidth: 12, usePointStyle: true, color: tema.texto } },
       tooltip: { mode: 'nearest', intersect: false }
     },
     scales: {
-      x: { ticks: { color: theme.texto }, grid: { color: theme.borde } },
-      y: { ticks: { color: theme.texto }, grid: { color: theme.borde } }
-    }
-  }), [theme.texto, theme.borde]);
+      x: {
+        type: 'time',
+        time: { unit: 'day' },
+        title: { display: true, text: 'Fecha', color: tema.texto },
+        grid: { color: '#e6eef8' },
+        ticks: { color: '#374151' }
+      },
+      y: {
+        title: { display: true, text: 'Ventas totales del turno (u)', color: tema.texto },
+        grid: { color: '#eef2f6' },
+        ticks: { color: '#374151' }
+      }
+    },
+    maintainAspectRatio: false,
+    elements: { line: { tension: 0.25 } },
+    layout: { padding: { top: 8, right: 12, bottom: 6, left: 6 } }
+  };
 
-  const onAnimate = useCallback(() => {
-    setAnimate(true);
-    setTimeout(() => setAnimate(false), 1200);
+  const buildMultipleChartData = useCallback(() => {
+    const mapped = multipleResult?.mapped;
+    if (!mapped) return { datasets: [] };
+    const datasets = mapped.series.map((s, idx) => ({
+      label: s.name,
+      data: s.data,
+      borderColor: `hsl(${(idx * 70) % 360} 65% 45%)`,
+      backgroundColor: `hsla(${(idx * 70) % 360} 65% 45% / 0.06)`,
+      showLine: true,
+      tension: 0.12,
+      pointRadius: 1,
+      borderWidth: 1.5
+    }));
+    if (mapped.targetSeries?.data?.length) {
+      datasets.push({
+        label: 'Target',
+        data: mapped.targetSeries.data,
+        borderColor: 'rgba(190,24,93,0.96)',
+        backgroundColor: 'rgba(190,24,93,0.06)',
+        tension: 0.2,
+        pointRadius: 0,
+        borderWidth: 2
+      });
+    }
+    if (mapped.predSeries?.data?.length) {
+      datasets.push({
+        label: 'Predicción',
+        data: mapped.predSeries.data,
+        borderColor: 'rgba(14,165,233,0.95)',
+        backgroundColor: 'rgba(14,165,233,0.06)',
+        tension: 0.2,
+        pointRadius: 0,
+        borderWidth: 3
+      });
+    }
+    return { datasets };
+  }, [multipleResult]);
+
+  const multipleOptions = {
+    parsing: false,
+    plugins: {
+      legend: { display: true, labels: { boxWidth: 12, color: tema.texto } },
+      tooltip: { mode: 'index', intersect: false }
+    },
+    scales: {
+      x: { type: 'linear', title: { display: true, text: 'Índice de muestra', color: tema.texto }, grid: { color: '#eef2f6' }, ticks: { color: '#374151' } },
+      y: { title: { display: true, text: 'Valor', color: tema.texto }, grid: { color: '#eef2f6' }, ticks: { color: '#374151' } }
+    },
+    maintainAspectRatio: false,
+    layout: { padding: { top: 8, right: 12, bottom: 6, left: 6 } }
+  };
+
+  // --- Human readable interpretations ---
+  const interpretSimple = useCallback((raw) => {
+    if (!raw || !raw.ok) return "No hay información para interpretar.";
+    const pts = (raw.samples && raw.samples.x && raw.samples.y) ? raw.samples.x.map((x,i) => ({ x, y: raw.samples.y[i] })) : [];
+    if (pts.length < 2) return "No hay suficientes puntos para una interpretación confiable.";
+    // slope approximation using simple linear regression (same as backend but quick local)
+    try {
+      const xs = pts.map(p => Number(p.x));
+      const ys = pts.map(p => Number(p.y));
+      const n = xs.length;
+      const meanX = xs.reduce((a,b)=>a+b,0)/n;
+      const meanY = ys.reduce((a,b)=>a+b,0)/n;
+      const num = xs.reduce((acc, xv, i) => acc + (xv-meanX)*(ys[i]-meanY), 0);
+      const den = xs.reduce((acc, xv) => acc + (xv-meanX)**2, 0) || 1;
+      const slope = num/den;
+      const slopePerDay = slope * 86400; // because xs are epoch seconds
+      const direction = slopePerDay > 0 ? 'aumento' : (slopePerDay < 0 ? 'descenso' : 'estable');
+      // compute avg and recent trend
+      const avg = ys.reduce((a,b)=>a+b,0)/n;
+      const lastY = ys[ys.length-1];
+      const pct = ((lastY - avg)/avg)*100;
+      const trendText = `Tendencia: ${direction}. Cambio aproximado por día: ${Math.abs(slopePerDay).toFixed(2)} unidades. Último valor ${lastY.toFixed(2)}, promedio ${avg.toFixed(2)} (${pct.toFixed(1)}% respecto al promedio).`;
+      return trendText;
+    } catch (e) {
+      return "No se pudo calcular la interpretación estadística.";
+    }
   }, []);
 
-  return (
-    <div style={{ padding: 18, minHeight: '100vh', background: `linear-gradient(180deg, ${theme.fondo}, ${theme.secundario})` }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gap: 14 }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ width: 46, height: 46, borderRadius: 10, background: theme.primario, color: '#fff', display: 'grid', placeItems: 'center' }}>
-              <FaChartLine />
-            </div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 18, color: theme.texto }}>Análisis de Ventas — Regresión</div>
-              <div style={{ color: '#64748b', fontSize: 13 }}>Simple y múltiple · Visualizaciones interactivas</div>
-            </div>
-          </div>
+  const interpretMultiple = useCallback((raw) => {
+    if (!raw || !raw.ok) return "No hay información para interpretar.";
+    const coefs = raw.coef || {};
+    const n = raw.n || (raw.samples && raw.samples.y && raw.samples.y.length) || 0;
+    if (!coefs || Object.keys(coefs).length === 0) return "No se detectaron coeficientes para interpretar.";
+    // identify top positive and negative contributors
+    const entries = Object.entries(coefs).map(([k,v]) => ({ k, v: Number(v) || 0 }));
+    entries.sort((a,b) => Math.abs(b.v) - Math.abs(a.v)); // por magnitud
+    const top = entries.slice(0,3);
+    const readable = top.map(t => {
+      const sign = t.v > 0 ? 'aumenta' : (t.v < 0 ? 'reduce' : 'sin efecto claro');
+      return `${t.k}: ${Math.abs(t.v).toFixed(3)} (${sign} el target por unidad de feature)`;
+    }).join('; ');
+    const base = `Muestras usadas: ${n}. `;
+    const advice = "Interpretación: coeficientes positivos indican asociación directa con el total; coeficientes negativos indican asociación inversa. Los valores grandes en magnitud tienen mayor impacto.";
+    return base + readable + ". " + advice;
+  }, []);
 
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select value={mode} onChange={(e) => setMode(e.target.value)} style={{ padding: 8, borderRadius: 8, border: `1px solid ${theme.borde}` }}>
-              <option value="simple">Regresión simple</option>
-              <option value="multiple">Regresión múltiple</option>
-            </select>
+  const SimpleSummaryCard = () => (
+    <div style={style.card(tema)}>
+      <div style={style.headerRow(tema)}>
+        <div>
+          <div style={style.title(tema)}>Regresión simple</div>
+          <div style={style.smallMuted(tema)}>Relaciona fecha (x) con total (y)</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => { setMode('simple'); }} style={style.btnGhost(tema)} title="Ver simple"><FaChartLine /></button>
+          <button onClick={() => downloadCSV((simpleResult?.mapped?.points || []).map(p => ({ x: p.x, y: p.y, y_pred: p.y_pred })), ['x','y','y_pred'])} style={style.btnGhost(tema)} title="Exportar CSV"><FaDownload /></button>
+        </div>
+      </div>
 
-            {mode === 'simple' ? (
-              <>
-                <select value={xField} onChange={(e) => setXField(e.target.value)} style={{ padding: 8, borderRadius: 8, border: `1px solid ${theme.borde}` }}>
-                  <option value="fecha_ordinal">Fecha (ordinal)</option>
-                  <option value="precio">Precio</option>
-                  <option value="cantidad">Cantidad</option>
-                </select>
-
-                <select value={yField} onChange={(e) => setYField(e.target.value)} style={{ padding: 8, borderRadius: 8, border: `1px solid ${theme.borde}` }}>
-                  <option value="total">Total</option>
-                  <option value="precio">Precio</option>
-                </select>
-              </>
-            ) : (
-              <>
-                <input placeholder="features separadas por coma" value={features.join(',')} onChange={(e) => setFeatures(e.target.value.split(',').map(s => s.trim()).filter(Boolean))} style={{ padding: 8, borderRadius: 8, border: `1px solid ${theme.borde}`, minWidth: 220 }} />
-                <select value={yField} onChange={(e) => setYField(e.target.value)} style={{ padding: 8, borderRadius: 8, border: `1px solid ${theme.borde}` }}>
-                  <option value="total">Total</option>
-                </select>
-              </>
-            )}
-
-            <input type="number" value={limit} onChange={(e) => setLimit(Math.max(1, Number(e.target.value || DEFAULT_LIMIT)))} style={{ width: 100, padding: 8, borderRadius: 8, border: `1px solid ${theme.borde}` }} />
-            <button onClick={() => { if (mode === 'simple') fetchSimple(); else fetchMultiple(); }} disabled={loading} style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: theme.primario, color: '#fff', cursor: 'pointer' }}>
-              <FaSyncAlt /> {loading ? 'Cargando' : 'Actualizar'}
-            </button>
-          </div>
-        </header>
-
-        {error && <div style={{ color: '#b91c1c', ...cardStyle(theme) }}>{String(error)}</div>}
-
-        <main style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 14 }}>
-          <section style={cardStyle(theme)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ color: theme.texto }}>Gráfico principal</strong>
-              <div style={{ color: '#64748b', fontSize: 13 }}>{mode === 'simple' ? 'Observado vs Predicho' : `Observado vs Predicho (${multipleCharts?.scatter?.meta?.feature || 'feature'})`}</div>
+      <div style={{ marginTop: 12 }}>
+        {loading && <div style={style.smallMuted(tema)}>Cargando datos...</div>}
+        {!loading && simpleResult && simpleResult.mapped && (
+          <>
+            <div style={{ height: 360, background: '#ffffff', borderRadius: 8, padding: 8 }}>
+              <Scatter data={buildSimpleChartData()} options={simpleOptions} />
             </div>
 
-            <div style={{ height: 420, marginTop: 10 }}>
-              {mode === 'simple' ? (
-                simpleChart ? <Scatter data={simpleChart.data} options={commonOptions} /> : <div style={{ color: '#64748b' }}>Sin datos</div>
-              ) : (
-                multipleCharts?.scatter ? <Scatter data={multipleCharts.scatter.data} options={commonOptions} /> : <div style={{ color: '#64748b' }}>Sin datos</div>
-              )}
-            </div>
-
-            <div style={{ marginTop: 10, color: '#475569', fontSize: 13 }}>
-              {mode === 'simple' && dataSimple && (
-                <div>
-                  n = <strong>{simpleChart?.meta?.n ?? dataSimple.n}</strong> · intercept = <strong>{numberFmt(simpleChart?.meta?.intercept ?? dataSimple.intercept)}</strong> · coef = <strong>{Array.isArray(simpleChart?.meta?.coef) ? simpleChart.meta.coef.map(numberFmt).join(', ') : numberFmt(simpleChart?.meta?.coef ?? dataSimple.coef)}</strong> · R² = <strong>{numberFmt(simpleChart?.meta?.r2 ?? dataSimple.r2 ?? 0)}</strong>
-                </div>
-              )}
-
-              {mode === 'multiple' && dataMultiple && (
-                <div>
-                  n = <strong>{multipleCharts?.summary?.n ?? dataMultiple.n}</strong> · R² = <strong>{numberFmt(multipleCharts?.summary?.r2 ?? dataMultiple.r2 ?? 0)}</strong>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <aside style={cardStyle(theme)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ color: theme.texto }}>Detalles</strong>
-              <div style={{ color: '#64748b', fontSize: 13 }}>{mode === 'simple' ? 'Muestras' : 'Resumen múltiple'}</div>
-            </div>
-
-            <div style={{ marginTop: 10, maxHeight: 420, overflow: 'auto' }}>
-              {mode === 'simple' && dataSimple && (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ textAlign: 'left', color: theme.texto }}><th style={{ padding: 8 }}>x</th><th style={{ padding: 8 }}>y</th><th style={{ padding: 8 }}>y_pred</th></tr>
-                  </thead>
-                  <tbody>
-                    {Array.isArray(dataSimple.samples?.x) ? dataSimple.samples.x.map((xi, i) => (
-                      <tr key={i}>
-                        <td style={{ padding: 8 }}>{xi}</td>
-                        <td style={{ padding: 8 }}>{numberFmt(dataSimple.samples.y[i])}</td>
-                        <td style={{ padding: 8 }}>{numberFmt(dataSimple.samples.y_pred[i])}</td>
-                      </tr>
-                    )) : <tr><td style={{ padding: 8 }}>Sin datos</td></tr>}
-                  </tbody>
-                </table>
-              )}
-
-              {mode === 'multiple' && dataMultiple && (
-                <>
-                  <div style={{ color: '#475569', marginBottom: 8 }}>Features: {multipleCharts?.summary?.features?.join(', ')}</div>
-                  <div style={{ height: 220 }}>
-                    {multipleCharts?.residuals ? <Bar data={multipleCharts.residuals.data} options={{ ...commonOptions, plugins: { legend: { display: false } } }} /> : <div style={{ color: '#64748b' }}>Sin datos</div>}
-                  </div>
-
-                  <div style={{ marginTop: 12 }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                      <thead><tr style={{ textAlign: 'left', color: theme.texto }}><th style={{ padding: 8 }}>#</th><th style={{ padding: 8 }}>y</th><th style={{ padding: 8 }}>y_pred</th></tr></thead>
-                      <tbody>
-                        {Array.isArray(dataMultiple.samples) ? dataMultiple.samples.map((s, i) => (
-                          <tr key={i}>
-                            <td style={{ padding: 8 }}>{i + 1}</td>
-                            <td style={{ padding: 8 }}>{numberFmt(s.y)}</td>
-                            <td style={{ padding: 8 }}>{numberFmt(s.y_pred)}</td>
-                          </tr>
-                        )) : <tr><td style={{ padding: 8 }}>Sin datos</td></tr>}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-
-              {!dataSimple && !dataMultiple && <div style={{ color: '#64748b' }}>Ejecuta la regresión para ver resultados</div>}
-            </div>
-
-            <div style={{ marginTop: 10, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={onAnimate} style={{ padding: '8px 10px', borderRadius: 8, border: `1px solid ${theme.borde}`, background: 'transparent' }}>
-                <FaPlay /> Animar
-              </button>
-            </div>
-          </aside>
-        </main>
-
-        <section style={cardStyle(theme)}>
-          <strong style={{ color: theme.texto }}>Interpretación rápida</strong>
-          <div style={{ marginTop: 8, color: '#475569' }}>
-            {mode === 'simple' && dataSimple && (
-              <div>
-                Coeficiente: <strong>{Array.isArray(dataSimple.coef) ? dataSimple.coef.map(numberFmt).join(', ') : numberFmt(dataSimple.coef)}</strong>. Intercept: <strong>{numberFmt(dataSimple.intercept)}</strong>. R²: <strong>{numberFmt(dataSimple.r2 ?? 0)}</strong>.
+            <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+              <div style={{ flex: 1 }}>
+                <strong>Puntos:</strong> {simpleResult.mapped.points.length}
               </div>
-            )}
-
-            {mode === 'multiple' && dataMultiple && (
-              <div>
-                Intercept: <strong>{numberFmt(dataMultiple.intercept)}</strong>.
-                {dataMultiple.coef && Object.entries(dataMultiple.coef).map(([k,v]) => <span key={k} style={{ marginLeft: 8 }}>{k}: <strong>{numberFmt(v)}</strong></span>)}
-                <div style={{ marginTop: 6 }}>R²: <strong>{numberFmt(dataMultiple.r2 ?? 0)}</strong>.</div>
+              <div style={{ flex: 1 }}>
+                <strong>Modelo:</strong> {simpleResult.raw?.mode ?? 'collection'}
               </div>
-            )}
+            </div>
 
-            {!dataSimple && !dataMultiple && <div>Actualiza para generar análisis.</div>}
-          </div>
-        </section>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 700 }}>Resumen en lenguaje sencillo</div>
+              <div style={{ marginTop: 6, ...style.smallMuted(tema) }}>
+                {interpretSimple(simpleResult.raw)}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
-};
 
-export default AnalisisV;
+  const MultipleSummaryCard = () => (
+    <div style={style.card(tema)}>
+      <div style={style.headerRow(tema)}>
+        <div>
+          <div style={style.title(tema)}>Regresión múltiple</div>
+          <div style={style.smallMuted(tema)}>Compara features con el target para estimar impacto</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => { setMode('multiple'); }} style={style.btnGhost(tema)} title="Ver multiple"><FaLayerGroup /></button>
+          <button onClick={() => {
+            const X = multipleResult?.mapped?.X_matrix || [];
+            const features = multipleResult?.mapped?.features || [];
+            const rows = X.map((r, i) => {
+              const obj = { index: i, y: (multipleResult?.mapped?.y || [])[i] };
+              features.forEach((f, idx) => obj[f] = r[idx]);
+              return obj;
+            });
+            downloadCSV(rows, ['index', ...(multipleResult?.mapped?.features || []), 'y']);
+          }} style={style.btnGhost(tema)} title="Exportar CSV"><FaDownload /></button>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        {loading && <div style={style.smallMuted(tema)}>Cargando datos...</div>}
+        {!loading && multipleResult && multipleResult.mapped && (
+          <>
+            <div style={{ height: 320, background: '#ffffff', borderRadius: 8, padding: 8 }}>
+              <Line data={buildMultipleChartData()} options={multipleOptions} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+              <div style={{ background: '#fff', padding: 8, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700 }}>Features</div>
+                <div style={style.smallMuted(tema)}>{formatForDisplay(multipleResult.mapped.features)}</div>
+              </div>
+
+              <div style={{ background: '#fff', padding: 8, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700 }}>Filas útiles</div>
+                <div style={style.smallMuted(tema)}>{multipleResult.raw?.n ?? (multipleResult.mapped?.X_matrix?.length ?? 0)}</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 10, display: 'flex', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700 }}>Intercept</div>
+                <div style={style.smallMuted(tema)}>{String(multipleResult.raw?.intercept ?? multipleResult.mapped.intercept ?? '-')}</div>
+              </div>
+              <div style={{ flex: 2 }}>
+                <div style={{ fontWeight: 700 }}>Coeficientes (resumen)</div>
+                <pre style={{ marginTop: 6, maxHeight: 120, overflow: 'auto', background: '#fafafa', padding: 8, borderRadius: 8 }}>{formatForDisplay(multipleResult.raw?.coef ?? multipleResult.mapped.coefs ?? {})}</pre>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontWeight: 700 }}>Resumen en lenguaje sencillo</div>
+              <div style={{ marginTop: 6, ...style.smallMuted(tema) }}>
+                {interpretMultiple(multipleResult.raw)}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={style.container}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+        <div>
+          <div style={style.title(tema)}>Panel de Análisis — Regresión</div>
+          <div style={style.smallMuted(tema)}>Comparativa de modelos y visualización interactiva</div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => setMode('simple')} style={{ ...(mode === 'simple' ? style.btnPrimary(tema) : style.btnGhost(tema)) }}>Simple</button>
+            <button onClick={() => setMode('multiple')} style={{ ...(mode === 'multiple' ? style.btnPrimary(tema) : style.btnGhost(tema)) }}>Multiple</button>
+          </div>
+          <button onClick={handleRefresh} style={style.btnGhost(tema)} title="Actualizar"><FaSync />&nbsp;Actualizar</button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16 }}>
+        <div>
+          {/* Descripción clara para el usuario */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FaInfoCircle style={{ color: '#2563eb' }} />
+              <div style={{ fontWeight: 700 }}>Qué estás viendo</div>
+            </div>
+            <div style={{ marginTop: 8, ...style.smallMuted(tema) }}>
+              <div><strong>Regresión simple:</strong> punto azul = ventas reales; línea verde = predicción del modelo. Si la línea sube con el tiempo, significa que las ventas tienden a aumentar; si baja, disminuyen.</div>
+              <div style={{ height: 6 }} />
+              <div><strong>Regresión múltiple:</strong> cada línea muestra cómo varía una característica (por ejemplo número de productos, suma de precios) a través de las muestras. La línea "Target" indica el valor real; la línea "Predicción" muestra lo que el modelo estima combinando las features.</div>
+              <div style={{ height: 6 }} />
+              <div><strong>Interpretación sencilla:</strong> lee el resumen en lenguaje natural abajo de cada gráfico; te dice la tendencia y las features con mayor efecto en el total.</div>
+            </div>
+          </div>
+
+          {mode === 'simple' ? <SimpleSummaryCard /> : <MultipleSummaryCard />}
+        </div>
+
+        <div>
+          <div style={style.card(tema)}>
+            <div style={{ fontWeight: 700 }}>Resumen rápido</div>
+            <div style={{ marginTop: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={style.smallMuted(tema)}>Estado</div>
+                <div>{loading ? 'Cargando...' : 'Listo'}</div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                <div style={style.smallMuted(tema)}>Última consulta</div>
+                <div>{new Date().toLocaleString()}</div>
+              </div>
+
+              <hr style={{ border: 'none', height: 1, background: tema.borde, margin: '12px 0' }} />
+
+              <div style={{ fontWeight: 700 }}>Detalles técnicos</div>
+              <div style={{ marginTop: 8, fontSize: 13 }}>
+                <div><strong>Simple:</strong> {simpleResult ? `${simpleResult.mapped.points.length} puntos` : '—'}</div>
+                <div><strong>Multiple:</strong> {multipleResult ? `${multipleResult.raw?.n ?? (multipleResult.mapped?.X_matrix?.length ?? 0)} filas` : '—'}</div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <details>
+                  <summary style={{ cursor: 'pointer', color: tema.texto }}>Ver respuestas crudas</summary>
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontWeight: 700 }}>Simple (raw)</div>
+                    <pre style={{ maxHeight: 140, overflow: 'auto', background: '#fafafa', padding: 8 }}>{formatForDisplay(simpleResult?.raw)}</pre>
+                    <div style={{ fontWeight: 700 }}>Multiple (raw)</div>
+                    <pre style={{ maxHeight: 140, overflow: 'auto', background: '#fafafa', padding: 8 }}>{formatForDisplay(multipleResult?.raw)}</pre>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ ...style.card(tema), borderLeft: '4px solid #ef4444' }}>
+            <div style={{ fontWeight: 700, color: '#b91c1c' }}>Error</div>
+            <pre style={{ marginTop: 8 }}>{formatForDisplay(error)}</pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
