@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect, useState } from 'react';
 import LoginView from './views/login/LoginView';
 import AvisoView from './views/login/AvisoView';
@@ -24,7 +23,6 @@ const App = () => {
     try { return localStorage.getItem('app_theme_selected') || 'bosque_claro'; } catch { return 'bosque_claro'; }
   });
 
-  // Verificar base de datos al iniciar
   useEffect(() => {
     const verificarDB = async () => {
       try {
@@ -37,14 +35,12 @@ const App = () => {
     verificarDB();
   }, []);
 
-  // Escuchar cambios de hash (rutas)
   useEffect(() => {
     const onHash = () => setRoute(parseHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  // Escuchar cambios de sesión en localStorage o eventos internos
   useEffect(() => {
     const onStorage = (e) => {
       if (!e) {
@@ -68,7 +64,6 @@ const App = () => {
     };
   }, []);
 
-  // Si la app detecta sesión activa y la ruta es root/login, redirige al home según rol
   useEffect(() => {
     try {
       if (!authState) return;
@@ -84,7 +79,6 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authState, route]);
 
-  // Mostrar estado de verificación DB
   if (dbDisponible === null) {
     return (
       <div style={{ textAlign: 'center', marginTop: 50, color: (temas[themeKey] || temas.bosque_claro).texto }}>
@@ -95,12 +89,12 @@ const App = () => {
 
   if (!dbDisponible) return <AvisoView />;
 
-  const [first, second] = route;
+  const [first, second, third] = route;
 
   // Debug route (development)
   if (first === 'debug' && second === 'dashboard') return <DebugDashboard />;
 
-  // Si no autenticado, mostrar LoginView (LoginView debe despachar 'auth:changed' tras login exitoso)
+  // Si no autenticado, mostrar LoginView
   if (!authState) {
     return <LoginView />;
   }
@@ -108,7 +102,14 @@ const App = () => {
   // Si autenticado, obtener usuario y decidir ruta/privilegios
   const storedUser = getStoredUser();
 
-  // Admin
+  // Permitir acceso directo a /reportes/analisis (sin prefijo admin)
+  // Esto hace que hashes como "#/reportes/analisis" funcionen y monten la UI de admin,
+  // que a su vez maneja la subruta y mostrará AnalisisV.
+  if (first === 'reportes' && second === 'analisis') {
+    return <DashboardAdmin />;
+  }
+
+  // Admin (mantener compatibilidad con hashes que comienzan por 'admin')
   if (first === 'admin' || getHomeRouteForUser(storedUser) === '#/admin/dashboard') {
     return <DashboardAdmin />;
   }
@@ -130,7 +131,6 @@ const App = () => {
     return null;
   }
 
-  // Por defecto
   return <LoginView />;
 };
 

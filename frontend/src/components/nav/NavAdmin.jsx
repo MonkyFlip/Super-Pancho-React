@@ -319,8 +319,8 @@ return (
           icon={<FaChartLine />}
           label="REPORTES"
           items={[
-            { label: 'Reportes de Ventas', path: '#/admin/reportes/ventas', icon: <FaChartLine /> },
-            { label: 'Analisis de Ventas', path: '#/admin/reportes/analisis', icon: <FaBook /> }
+            { label: 'Reportes de Ventas', path: '#/admin/reportes/ReportesV', icon: <FaChartLine /> },
+            { label: 'Analisis de Ventas', path: '#/admin/reportes/AnalisisV', icon: <FaBook /> }
           ]}
         />
 

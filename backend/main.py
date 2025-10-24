@@ -1,56 +1,85 @@
 # backend/main.py
-from dotenv import load_dotenv
 import os
 import logging
 import json
-import gridfs  # <--- AÑADIDO
-import math    # <--- AÑADIDO
-from flask import Flask, request, jsonify, make_response, send_file  # <--- send_file AÑADIDO
+import time
+import threading
+from datetime import datetime
+from flask import Flask, request, make_response, current_app
 from flask_cors import CORS
 from bson import json_util
-from bson.objectid import ObjectId, InvalidId  # <--- AÑADIDO
-from pymongo import ASCENDING
+from bson.objectid import ObjectId, InvalidId
 
-# cargar variables de entorno
+# carga variables de entorno
+from dotenv import load_dotenv
 load_dotenv()
 
-# imports de la aplicación (ajusta si cambian las rutas internas)
-from .db.conexion import get_db
-from .controllers.db.crear_db_controller import crear_y_poblar_db
-from .controllers.login.login_controller import login_user, AuthError
+# imports internos
+from db.conexion import get_db
+from controllers.db.crear_db_controller import crear_y_poblar_db
+from controllers.login.login_controller import login_user, AuthError, JWT_SECRET, JWT_ALGO
 
+# regresion blueprint (asegúrate de controllers/regresion_lineal/__init__.py que exporta bp)
+from controllers.regresion_lineal import bp as regresion_bp
+from api import bp as api_bp  # blueprint que expone la interfaz interactiva /api
+
+# util para migración
+from controllers.regresion_lineal.actualiza_fecha_ordinal import run_migration
+
+# -----------------------
+# App y configuración
+# -----------------------
 app = Flask(__name__)
-
-# -----------------------
-# Configuración básica
-# -----------------------
 app.secret_key = os.environ.get("SECRET_KEY", "clave_insegura_dev")
+app.config['GET_DB'] = get_db
 
+# CORS: permitir orígenes de desarrollo comunes
 FRONTEND_ORIGINS = [
     os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000"),
     "http://127.0.0.1:3000",
     "http://localhost:3000"
 ]
-
-# CORS: permitir orígenes de desarrollo, métodos y headers comunes
 CORS(app,
      resources={r"/*": {"origins": FRONTEND_ORIGINS}},
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
-# logging
+# logging básico
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.info("API iniciado. JWT secret configured: %s", bool(os.environ.get("JWT_SECRET")))
+
+# Registrar blueprints
+app.register_blueprint(regresion_bp)  # /regresion
+app.register_blueprint(api_bp)        # /api
+
+# -----------------------
+# Iniciar migración fecha_ordinal en background (no bloqueante)
+# -----------------------
+def start_background_migration():
+    try:
+        def _run():
+            try:
+                db_getter = app.config.get('GET_DB') or get_db
+                app.logger.info("Iniciando migración fecha_ordinal (background)...")
+                res = run_migration(db_getter)
+                app.logger.info("Migración fecha_ordinal completada: %s", res)
+            except Exception as e:
+                app.logger.exception("Error en migración background: %s", e)
+        t = threading.Thread(target=_run, daemon=True, name="fecha_ordinal_migration")
+        t.start()
+    except Exception:
+        app.logger.exception("No se pudo iniciar thread de migración")
+
+# llamar después de registrar blueprints
+start_background_migration()
 
 # -----------------------
 # Utilidades
 # -----------------------
 def _serialize_for_json(obj):
-    """
-    Convierte objetos BSON (ObjectId, datetimes) a JSON serializable usando bson.json_util
-    """
+    """Convierte objetos BSON (ObjectId, datetimes) a JSON serializable usando bson.json_util."""
     try:
         return json.loads(json_util.dumps(obj))
     except Exception:
@@ -59,304 +88,192 @@ def _serialize_for_json(obj):
         except Exception:
             return str(obj)
 
-# -----------------------
-# Preflight / OPTIONS handler
-# -----------------------
 @app.before_request
 def handle_options_preflight():
-    """
-    Responder explícitamente a OPTIONS con 200 OK para evitar que middlewares posteriores
-    (autenticación, DB) bloqueen el preflight.
-    """
     if request.method == 'OPTIONS':
-        resp = make_response('', 200)
-        return resp
+        return make_response('', 200)
 
 # -----------------------
-# Root: página interactiva "API de Super Pancho"
+# Root HTML interactivo (pequeña landing)
 # -----------------------
 @app.route('/', methods=['GET'])
 def index():
     base = request.host_url.rstrip('/')
     html = f"""
-    <!doctype html>
-    <html lang="es">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <title>API de Super Pancho</title>
-        <style>
-          body {{ font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:#f6f8fb; color:#111; padding:28px; }}
-          .card {{ background:#fff; border-radius:12px; padding:18px; box-shadow:0 8px 26px rgba(16,24,40,0.06); max-width:1000px; margin:18px auto; }}
-          h1 {{ margin:0 0 8px 0; font-size:22px; }}
-          p {{ margin:0 0 12px 0; color:#555; }}
-          button {{ margin:6px 8px 6px 0; padding:8px 12px; border-radius:8px; border:1px solid #e6eefc; background:#fff; cursor:pointer; }}
-          pre {{ background:#0f1720; color:#e6eefc; padding:12px; border-radius:8px; overflow:auto; max-height:360px; }}
-          .small {{ color:#777; margin-top:10px; display:block; }}
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h1>API de Super Pancho</h1>
-          <p>Servidor de desarrollo. Usa los botones para inspeccionar colecciones y documentos.</p>
-
-          <div>
-            <button onclick="fetchCollections()">Listar colecciones</button>
-            <button onclick="fetchUsuarios()">Ver /usuarios (primeros 50)</button>
-            <button onclick="fetchCollectionSample('clientes')">Ver /clientes (primeros 50)</button>
-            <button onclick="fetchCollectionSample('productos')">Ver /productos (primeros 50)</button>
-            <button onclick="pingVerificaDb()">Verificar DB</button>
-            <button onclick="document.getElementById('out').textContent = ''">Limpiar</button>
-          </div>
-
-          <div style="margin-top:12px;">
-            <div style="font-weight:800">Salida</div>
-            <pre id="out">Lista de colecciones y endpoints disponibles...</pre>
-            <div class="small">Origin detectada: {request.headers.get('Origin') or 'N/A'}</div>
-          </div>
-
-        </div>
-
-        <script>
-          const base = '{base}';
-
-          async function fetchCollections() {{
-            try {{
-              const res = await fetch(base + '/colecciones');
-              const json = await res.json();
-              document.getElementById('out').textContent = JSON.stringify(json, null, 2);
-            }} catch (e) {{
-              document.getElementById('out').textContent = 'Error: ' + e;
-            }}
-          }}
-
-          async function fetchUsuarios() {{
-            try {{
-              const res = await fetch(base + '/usuarios?limit=50');
-              const json = await res.json();
-              document.getElementById('out').textContent = JSON.stringify(json, null, 2);
-            }} catch (e) {{
-              document.getElementById('out').textContent = 'Error: ' + e;
-            }}
-          }}
-
-          async function fetchCollectionSample(name) {{
-            try {{
-              const res = await fetch(base + '/coleccion/' + encodeURIComponent(name) + '?limit=50');
-              const json = await res.json();
-              document.getElementById('out').textContent = JSON.stringify(json, null, 2);
-            }} catch (e) {{
-              document.getElementById('out').textContent = 'Error: ' + e;
-            }}
-          }}
-
-          async function pingVerificaDb() {{
-            try {{
-              const res = await fetch(base + '/verifica_db');
-              const json = await res.json();
-              document.getElementById('out').textContent = JSON.stringify(json, null, 2);
-            }} catch (e) {{
-              document.getElementById('out').textContent = 'Error: ' + e;
-            }}
-          }}
-        </script>
-      </body>
-    </html>
+    <!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>API Backend</title>
+    <style>body{{font-family:system-ui,Segoe UI,Roboto,Arial;background:#f6f8fb;color:#111;padding:28px}}.card{{background:#fff;border-radius:12px;padding:18px;max-width:1000px;margin:18px auto;box-shadow:0 8px 26px rgba(16,24,40,0.06)}}a{{
+    color:#2563eb;text-decoration:none}}</style></head><body>
+    <div class="card"><h1>API Backend</h1><p>Interfaz mínima. Usa <a href="{base}/api">/api</a> para explorar colecciones y endpoints.</p>
+    <ul>
+      <li><a href="{base}/api">API Explorer (HTML)</a></li>
+      <li><a href="{base}/api/colecciones">/api/colecciones (JSON)</a></li>
+      <li><a href="{base}/regresion/simple">/regresion/simple (POST)</a></li>
+      <li><a href="{base}/regresion/multiple">/regresion/multiple (POST)</a></li>
+    </ul>
+    <div style="margin-top:12px;font-size:13px;color:#666">Origin detectada: {request.headers.get('Origin') or 'N/A'}</div>
+    </div></body></html>
     """
     resp = make_response(html, 200)
     resp.headers['Content-Type'] = 'text/html; charset=utf-8'
     return resp
 
 # -----------------------
-# Endpoint: listar colecciones disponibles
+# Endpoints auxiliares compatibles con UI/dev
 # -----------------------
 @app.route('/colecciones', methods=['GET'])
 def listar_colecciones():
     try:
         db = get_db()
         if db is None:
-            return jsonify({"error": "DB no disponible"}), 500
+            return {"ok": False, "error": "DB no disponible"}, 500
         names = db.list_collection_names()
-        return jsonify({"ok": True, "colecciones": names}), 200
+        return {"ok": True, "colecciones": names}, 200
     except Exception as e:
         logger.exception("Error en /colecciones: %s", e)
-        return jsonify({"error": str(e)}), 500
+        return {"ok": False, "error": str(e)}, 500
 
-# -----------------------
-# Endpoint: obtener documentos de una colección (safe)
-# -----------------------
 @app.route('/coleccion/<string:nombre>', methods=['GET'])
 def coleccion_sample(nombre):
     try:
-        limit = int(request.args.get('limit') or 50)
-        limit = max(1, min(limit, 200))
-    except Exception:
-        limit = 50
-    try:
-        db = get_db()
-        if db is None:
-            return jsonify({"error": "DB no disponible"}), 500
-        if nombre not in db.list_collection_names():
-            return jsonify({"error": f"Colección '{nombre}' no encontrada"}), 404
-        cursor = db[nombre].find().limit(limit)
-        docs = list(cursor)
-        return jsonify({"ok": True, "coleccion": nombre, "count": len(docs), "docs": _serialize_for_json(docs)}), 200
-    except Exception as e:
-        logger.exception("Error en /coleccion/%s: %s", nombre, e)
-        return jsonify({"error": str(e)}), 500
-
-# -----------------------
-# Endpoint /usuarios (compatibilidad con frontend)
-# -----------------------
-@app.route('/usuarios', methods=['GET'])
-def usuarios_list():
-    """
-    Endpoint público que devuelve docs paginados y el conteo total.
-    Acepta query params:
-      - limit (int, default 10, max 1000)
-      - skip (int, default 0) OR page (1-based)
-      - q (string) búsqueda simple
-    """
-    try:
-        db = get_db()
-        if db is None:
-            return jsonify({"error": "DB no disponible"}), 500
-
-        # limit
         try:
-            limit = int(request.args.get('limit') or request.args.get('perPage') or 10)
+            limit = int(request.args.get('limit') or 50)
         except Exception:
-            limit = 10
+            limit = 50
         limit = max(1, min(limit, 1000))
 
-        # skip via skip or page
-        skip = 0
-        if request.args.get('skip') is not None:
-            try:
-                skip = int(request.args.get('skip') or 0)
-            except Exception:
-                skip = 0
-        elif request.args.get('page') is not None:
-            try:
-                page = int(request.args.get('page') or 1)
-                page = max(1, page)
-                skip = (page - 1) * limit
-            except Exception:
-                skip = 0
-
-        q = request.args.get('q') or None
-
-        query = {}
-        if q:
-            # búsqueda simple en usuario, nombre o email
-            query = {
-                "$or": [
-                    {"usuario": {"$regex": q, "$options": "i"}},
-                    {"nombre": {"$regex": q, "$options": "i"}},
-                    {"email": {"$regex": q, "$options": "i"}}
-                ]
-            }
-
-        usuarios_col = db['usuarios']
-
-        # obtener conteo total (rápido si hay índices adecuados)
-        total = usuarios_col.count_documents(query)
-
-        # obtener documentos paginados; ordenar por _id ascendente para consistencia
-        cursor = usuarios_col.find(query, {"password_hash": 0}).sort([("_id", ASCENDING)]).skip(skip).limit(limit)
+        db = get_db()
+        if db is None:
+            return {"error": "DB no disponible"}, 500
+        if nombre not in db.list_collection_names():
+            return {"error": f"Colección '{nombre}' no encontrada"}, 404
+        cursor = db[nombre].find().limit(limit)
         docs = list(cursor)
-
-        # serializar ObjectId y fechas de forma sencilla
-        def _to_serializable(doc):
-            d = dict(doc)
-            if "_id" in d:
-                try:
-                    d["_id"] = str(d["_id"])
-                except Exception:
-                    pass
-            for k in ("created_at", "last_login", "updated_at"):
-                if k in d and hasattr(d[k], "isoformat"):
-                    try:
-                        d[k] = d[k].isoformat()
-                    except Exception:
-                        pass
-            d.pop("password_hash", None)
-            return d
-
-        serial = [_to_serializable(d) for d in docs]
-
-        return jsonify({"ok": True, "count": total, "docs": serial, "limit": limit, "skip": skip}), 200
-
+        return {"ok": True, "coleccion": nombre, "count": len(docs), "docs": _serialize_for_json(docs)}, 200
     except Exception as e:
-        logger.exception("Error en /usuarios: %s", e)
-        return jsonify({"error": str(e)}), 500
+        logger.exception("Error en /coleccion/%s: %s", nombre, e)
+        return {"error": str(e)}, 500
+
+# DEBUG: endpoint simple para listar usuarios (temporal, para panel)
+@app.route('/usuarios', methods=['GET'])
+def listar_usuarios_debug():
+    try:
+        db = get_db()
+        if db is None:
+            return {"ok": False, "error": "DB no disponible"}, 500
+        try:
+            limit = int(request.args.get('limit', 10))
+            skip = int(request.args.get('skip', 0))
+        except Exception:
+            limit, skip = 10, 0
+        cursor = db['usuarios'].find().skip(skip).limit(limit)
+        docs = list(cursor)
+        return {"ok": True, "count": len(docs), "usuarios": _serialize_for_json(docs)}, 200
+    except Exception as e:
+        current_app.logger.exception("Error en /usuarios: %s", e)
+        return {"ok": False, "error": str(e)}, 500
 
 # -----------------------
-# Endpoints existentes (login, verifica_db, crear_db, debug_cookies)
+# Login / Me / Logout
 # -----------------------
+import jwt as pyjwt  # PyJWT
+from jwt import ImmatureSignatureError, ExpiredSignatureError, InvalidTokenError
+
+JWT_LEEWAY = int(os.environ.get('JWT_LEEWAY_SECONDS', '60'))  # tolerancia en segundos para iat/exp
+DEV_IGNORE_IAT = os.environ.get('DEV_IGNORE_IAT', '1') == '1'  # solo para desarrollo; poner '0' en producción
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json() or {}
     usuario = data.get('usuario')
     password = data.get('password')
-
     try:
         result = login_user(get_db, usuario, password)
         if not isinstance(result, dict):
             raise Exception("Respuesta inesperada de login_user")
-
         user = result.get("user") or result.get("usuario") or result.get("data") or None
-        redirect = result.get("redirect")
         token = result.get("token")
         expires_in = result.get("expiresIn") or result.get("expires_in") or None
-
-        serialized_user = None
-        if user:
-            # normalizar y eliminar password_hash
-            serialized_user = _serialize_for_json(user)
-            if isinstance(serialized_user, dict):
-                serialized_user.pop("password_hash", None)
-
+        serialized_user = _serialize_for_json(user) if user else None
+        if isinstance(serialized_user, dict):
+            serialized_user.pop("password_hash", None)
         resp_payload = {}
         if serialized_user is not None:
             resp_payload["user"] = serialized_user
-        if redirect:
-            resp_payload["redirect"] = redirect
         resp_payload["token"] = token
         if expires_in:
             resp_payload["expiresIn"] = expires_in
-
-        # Log de auditoría mínimo
-        try:
-            rol = serialized_user.get("rol") if isinstance(serialized_user, dict) else None
-            logger.info("Login exitoso: usuario=%s rol=%s desde IP=%s", usuario, str(rol), request.remote_addr or "desconocida")
-        except Exception:
-            logger.info("Login exitoso: usuario=%s desde IP=%s", usuario, request.remote_addr or "desconocida")
-
-        return jsonify(resp_payload), 200
+        logger.info("Login exitoso: usuario=%s desde IP=%s", usuario, request.remote_addr or "desconocida")
+        return resp_payload, 200
     except AuthError as e:
-        return jsonify({'error': str(e)}), 401
+        return {"error": str(e)}, 401
     except Exception as e:
         logger.exception("Error interno en /login: %s", e)
-        return jsonify({'error': 'Error interno'}), 500
+        return {"error": "Error interno"}, 500
 
 @app.route('/me', methods=['GET'])
 def me():
-    return jsonify({"error": "no authenticated"}), 401
+    auth = request.headers.get('Authorization') or ''
+    token = auth[7:].strip() if auth.startswith('Bearer ') else None
+    if not token:
+        return {"error": "no authenticated"}, 401
+
+    try:
+        # Intento normal con leeway configurable
+        payload = pyjwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO], leeway=JWT_LEEWAY)
+    except ImmatureSignatureError as e:
+        current_app.logger.warning("Token iat in the future: server_time=%s token_error=%s", int(time.time()), str(e))
+        # En desarrollo, intentar decodificar ignorando la verificación de iat para diagnóstico
+        if DEV_IGNORE_IAT:
+            try:
+                payload = pyjwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO], options={"verify_iat": False})
+                current_app.logger.info("Decoded token payload (iat ignored for dev): %s", {k: payload.get(k) for k in ['sub','iat','exp','rol']})
+            except Exception as e2:
+                current_app.logger.warning("Fallback decode (ignore iat) failed: %s", str(e2))
+                return {"error": "token not yet valid (iat) or server time mismatch"}, 401
+        else:
+            return {"error": "token not yet valid (iat) or server time mismatch"}, 401
+    except ExpiredSignatureError:
+        return {"error": "token expired"}, 401
+    except InvalidTokenError as e:
+        current_app.logger.warning("Invalid token on /me: %s", str(e))
+        return {"error": "invalid token"}, 401
+    except Exception as e:
+        current_app.logger.exception("Unexpected error decoding token on /me: %s", e)
+        return {"error": "no authenticated"}, 401
+
+    # al llegar aquí payload está decodificado
+    user_id = payload.get('sub')
+    if not user_id:
+        return {"error": "invalid token"}, 401
+
+    try:
+        db = get_db()
+        user = db['usuarios'].find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return {"error": "user not found"}, 404
+        user_serial = _serialize_for_json(user)
+        user_serial.pop('password_hash', None)
+        return user_serial, 200
+    except Exception as e:
+        current_app.logger.exception("Error fetching user in /me: %s", e)
+        return {"error": "no authenticated"}, 401
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    return jsonify({"ok": True}), 200
+    return {"ok": True}, 200
 
+# -----------------------
+# DB verification and creation
+# -----------------------
 @app.route('/verifica_db', methods=['GET'])
 def verifica_db():
     try:
         db = get_db()
         ok = db is not None and "usuarios" in db.list_collection_names()
-        return jsonify({"ok": ok})
+        return {"ok": ok}, 200
     except Exception as e:
         logger.exception("Error en /verifica_db: %s", e)
-        return jsonify({"ok": False}), 500
+        return {"ok": False}, 500
 
 @app.route('/crear_db', methods=['POST'])
 def crear_db():
@@ -365,60 +282,34 @@ def crear_db():
         total = payload.get("total")
         logger.info("POST /crear_db recibido, total=%s desde %s", total, request.remote_addr)
         resumen = crear_y_poblar_db(get_db, total_records=total)
-        return jsonify({"ok": True, "mensaje": "Base creada y poblada (si no existía).", "resumen": resumen}), 200
+        return {"ok": True, "mensaje": "Base creada y poblada (si no existía).", "resumen": resumen}, 200
     except Exception as e:
         logger.exception("Error en /crear_db: %s", e)
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}, 500
 
-@app.route('/debug_cookies', methods=['GET'])
-def debug_cookies():
-    try:
-        logger.info("Request cookies: %s", dict(request.cookies))
-        return jsonify(dict(request.cookies)), 200
-    except Exception as e:
-        logger.exception("Error en /debug_cookies: %s", e)
-        return jsonify({}), 500
-
-# ----------------------------------------------------------
-# --- NUEVOS ENDPOINTS MULTIMEDIA (Basados en tu Controller) ---
-# ----------------------------------------------------------
-
+# -----------------------
+# Multimedia (GridFS) endpoints (simplificados)
+# -----------------------
+import gridfs
 @app.route('/multimedia/archivos', methods=['GET'])
 def listar_archivos_multimedia():
-    """
-    Devuelve una lista paginada de archivos multimedia (solo metadatos).
-    Query Params:
-    - tipo (string, requerido): "imagen", "video", "foto"
-    - page (int, default 1): Número de página
-    - limit (int, default 20): Archivos por página
-    """
     try:
         db = get_db()
         fs = gridfs.GridFS(db, collection="multimedia")
-
-        # --- Validación de Parámetros ---
         tipo = request.args.get('tipo')
         if not tipo:
-            return jsonify({"error": "El parámetro 'tipo' es requerido (ej: 'imagen', 'video')"}), 400
-
+            return {"error": "El parámetro 'tipo' es requerido (ej: 'imagen', 'video')"}, 400
         try:
             page = int(request.args.get('page', 1))
             limit = int(request.args.get('limit', 20))
             page = max(1, page)
-            limit = max(1, min(limit, 100)) # Limitar a 100 max por request
+            limit = max(1, min(limit, 100))
         except ValueError:
-            return jsonify({"error": "'page' y 'limit' deben ser números enteros"}), 400
-
+            return {"error": "'page' y 'limit' deben ser números enteros"}, 400
         skip = (page - 1) * limit
         query = {"tipo": tipo}
-
-        # --- Consultas a la DB ---
         total_count = db["multimedia.files"].count_documents(query)
-        
-        # Usamos fs.find para obtener los metadatos de GridFS
         cursor = fs.find(query).skip(skip).limit(limit)
-
-        # Serializar los metadatos para la respuesta JSON
         archivos_list = []
         for f in cursor:
             archivos_list.append({
@@ -427,69 +318,39 @@ def listar_archivos_multimedia():
                 "content_type": f.content_type,
                 "length": f.length,
                 "upload_date": f.upload_date.isoformat() if f.upload_date else None,
-                "tipo": f.tipo
+                "tipo": getattr(f, "tipo", None)
             })
-            
-        total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
-
-        # --- Respuesta ---
-        return jsonify({
-            "ok": True,
-            "archivos": archivos_list,
-            "pagination": {
-                "total_count": total_count,
-                "current_page": page,
-                "page_size": limit,
-                "total_pages": total_pages
-            }
-        }), 200
-
+        total_pages = (total_count + limit - 1) // limit if total_count > 0 else 1
+        return {"ok": True, "archivos": archivos_list, "pagination": {"total_count": total_count, "current_page": page, "page_size": limit, "total_pages": total_pages}}, 200
     except Exception as e:
         logger.exception("Error en /multimedia/archivos: %s", e)
-        return jsonify({"error": "Error interno del servidor", "detalle": str(e)}), 500
-
+        return {"error": "Error interno del servidor", "detalle": str(e)}, 500
 
 @app.route('/multimedia/archivo/<string:file_id>', methods=['GET'])
 def ver_archivo_multimedia(file_id):
-    """
-    Obtiene el contenido binario de un archivo de GridFS por su ID.
-    Esto puede ser usado directamente en el 'src' de un tag <img> o <video>.
-    """
     try:
         db = get_db()
         fs = gridfs.GridFS(db, collection="multimedia")
-        
         try:
             oid = ObjectId(file_id)
         except InvalidId:
-            return jsonify({"error": "ID de archivo inválido"}), 400
-
+            return {"error": "ID de archivo inválido"}, 400
         try:
-            # fs.get() busca el archivo por su _id en la colección .files
             grid_out = fs.get(oid)
-            
-            # Usamos send_file para streamear el archivo al cliente.
-            # grid_out se comporta como un objeto 'file-like'.
-            # 'as_attachment=False' sugiere al navegador mostrarlo (inline)
-            # en lugar de descargarlo.
-            return send_file(
-                grid_out,
-                mimetype=grid_out.content_type,
-                as_attachment=False,
-                download_name=grid_out.filename
-            )
-            
+            return make_response(grid_out.read(), 200, {
+                "Content-Type": grid_out.content_type or "application/octet-stream",
+                "Content-Disposition": f'inline; filename="{grid_out.filename}"'
+            })
         except gridfs.errors.NoFile:
-            return jsonify({"error": "Archivo no encontrado"}), 404
-
+            return {"error": "Archivo no encontrado"}, 404
     except Exception as e:
-        logger.exception(f"Error en /multimedia/archivo/{file_id}: %s", e)
-        return jsonify({"error": "Error interno del servidor", "detalle": str(e)}), 500
-
+        logger.exception("Error en /multimedia/archivo/%s: %s", file_id, e)
+        return {"error": "Error interno del servidor", "detalle": str(e)}, 500
 
 # -----------------------
 # Main
 # -----------------------
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+    app.run(host='0.0.0.0', port=port, debug=debug)

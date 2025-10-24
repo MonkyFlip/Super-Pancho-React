@@ -12,15 +12,16 @@ import DashboardP from './productos/DashboardP';
 import DashboardA from './areas/DashboardA';
 import DashboardT from './trabajadores/DashboardT';
 
-// --- 1. AÑADIR IMPORTACIONES MULTIMEDIA ---
+// Multimedia
 import ImagenesView from './multimedia/ImagenesView';
 import FotosView from './multimedia/FotosView';
 import VideosView from './multimedia/VideosView';
-// ------------------------------------------
+
+// Reportes / Analisis
+import AnalisisV from './reportes/AnalisisV';
 
 const THEME_KEY = 'app_theme_selected';
 
-// ... (el resto de tus componentes internos como AnimatedSparkline, BarSeries, KPI, etc. quedan igual) ...
 const AnimatedSparkline = ({ data = [], color = '#1976d2', height = 80 }) => {
   if (!data.length) return <div style={{ height }}>Sin datos</div>;
   const vals = data.map(v => Number(v) || 0);
@@ -178,7 +179,7 @@ const Dashboard = () => {
   // Decide sub-route: route[0] is 'admin'
   const [, second, third] = route;
 
-  // Si la subruta corresponde a un dashboard de CRUD, renderizarlo y regresar
+  // CRUD dashboards
   if (second === 'usuarios' || third === 'DashboardU') {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
@@ -234,21 +235,13 @@ const Dashboard = () => {
     );
   }
 
-  // --- 2. AÑADIR LÓGICA DE RUTAS MULTIMEDIA ---
-  // (Colócalo aquí, después del último 'if' de 'trabajadores')
+  // Multimedia routes
   if (second === 'multimedia') {
     let ViewComponent = null;
-    
-    // El 'third' componente de la ruta (ej: 'imagenes')
-    if (third === 'imagenes') {
-      ViewComponent = ImagenesView;
-    } else if (third === 'fotos') {
-      ViewComponent = FotosView;
-    } else if (third === 'videos') {
-      ViewComponent = VideosView;
-    }
+    if (third === 'imagenes') ViewComponent = ImagenesView;
+    else if (third === 'fotos') ViewComponent = FotosView;
+    else if (third === 'videos') ViewComponent = VideosView;
 
-    // Si encontramos un componente que coincida, lo renderizamos
     if (ViewComponent) {
       return (
         <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
@@ -260,11 +253,20 @@ const Dashboard = () => {
       );
     }
   }
-  // --------------------------------------------------
 
+  // Reportes / Analisis route
+  if ((second === 'reportes' && third === 'analisis') || (second === 'reportes' && third === 'AnalisisV') || (second === 'reportes' && third === 'ReportesV' && window.location.hash.toLowerCase().includes('analisis')) ) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+        <NavAdmin />
+        <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          <AnalisisV />
+        </main>
+      </div>
+    );
+  }
 
-  // Si no coincide con subruta conocida, renderizar el contenido principal del admin (dashboard principal)
-  // mock data
+  // Dashboard principal (default)
   const ventas = [120, 180, 95, 220, 160, 200, 240, 180, 210, 230];
   const clientes = [6, 9, 4, 12, 7, 10, 11, 9, 8, 13];
   const inventario = [120, 90, 60, 40, 80, 70];
@@ -272,101 +274,46 @@ const Dashboard = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
       <NavAdmin />
-      
-      {/* ... (El resto del 'return' final queda exactamente igual) ... */}
-      <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 26 }}>Panel administrativo</h1>
-            <div style={{ color: '#666', marginTop: 6 }}>Resumen ejecutivo y herramientas de gestión</div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ textAlign: 'right', color: '#777', fontSize: 13 }}>
-              <div style={{ fontWeight: 800 }}>Módulos</div>
-              <div style={{ marginTop: 4 }}>CRUD's · Reportes · Base de Datos</div>
+      <main style={{ flex: 1, padding: 28, display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20, minWidth: 0 }}>
+        <section style={{ background: '#fff', borderRadius: 12, padding: 18, boxShadow: '0 10px 30px rgba(16,24,40,0.04)', border: '1px solid rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ margin: 0 }}>Resumen ventas</h2>
+              <div style={{ color: '#64748b', fontSize: 13 }}>Últimos 30 días</div>
             </div>
-          </div>
-        </header>
-
-        {/* KPI row */}
-        <section style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 260px', minWidth: 220 }}>
-            <KPI title="Ventas este mes" value="$3,420.00" trend="+8.2%" accent="#2e7d32" />
-            <div style={{ marginTop: 10, background: '#fff', borderRadius: 12, padding: 12 }}>
-              <div style={{ fontSize: 13, color: '#666' }}>Tendencia (últimos 10 días)</div>
-              <div style={{ marginTop: 8 }}><AnimatedSparkline data={ventas} color={tema.primario} height={72} /></div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <KPI title="Ventas (mes)" value="$12,430" trend="+4.2%" accent="#16a34a" />
+              <KPI title="Clientes nuevos" value="86" trend="+3.1%" accent="#0ea5e9" />
             </div>
           </div>
 
-          <div style={{ flex: '1 1 220px', minWidth: 220 }}>
-            <KPI title="Usuarios activos" value="124" trend="+3.6%" accent="#1976d2" />
-            <div style={{ marginTop: 10, background: '#fff', borderRadius: 12, padding: 12 }}>
-              <div style={{ fontSize: 13, color: '#666' }}>Nuevos clientes (mes)</div>
-              <div style={{ marginTop: 8 }}><AnimatedSparkline data={clientes} color="#1976d2" height={72} /></div>
-            </div>
+          <div style={{ marginTop: 12 }}>
+            <AnimatedSparkline data={ventas} color="#2563eb" />
           </div>
 
-          <div style={{ flex: '1 1 220px', minWidth: 220 }}>
-            <KPI title="Valor inventario" value="$42,800" trend="-1.8%" accent="#f57c00" />
-            <div style={{ marginTop: 10, background: '#fff', borderRadius: 12, padding: 12 }}>
-              <div style={{ fontSize: 13, color: '#666' }}>Existencias por categoría</div>
-              <div style={{ marginTop: 8 }}><BarSeries data={inventario} color={tema.acento} height={56} /></div>
+          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: 13, color: '#666' }}>Actividad clientes</div>
+              <BarSeries data={clientes} color="#06b6d4" />
             </div>
-          </div>
-
-          <div style={{ flex: '0 0 160px', minWidth: 140 }}>
-            <div style={{ background: '#fff', padding: 12, borderRadius: 12, textAlign: 'center', boxShadow: '0 10px 28px rgba(16,24,40,0.04)' }}>
-              <div style={{ fontSize: 12, color: '#888' }}>Salud del sistema</div>
-              <div style={{ marginTop: 8, fontWeight: 900, fontSize: 18, color: tema.primario }}>86%</div>
+            <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: 13, color: '#666' }}>Top productos</div>
+              <BarSeries data={inventario} color="#f97316" />
             </div>
           </div>
         </section>
 
-        {/* Detail: ventas and inventario */}
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, alignItems: 'start' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: '#fff', borderRadius: 12, padding: 14, boxShadow: '0 12px 30px rgba(16,24,40,0.04)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 900 }}>Ventas y facturación</div>
-                  <div style={{ fontSize: 13, color: '#666' }}>Series temporales, top productos y métricas de conversión</div>
-                </div>
-                <div style={{ color: '#888', fontSize: 13 }}>Últimos 10 días</div>
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <AnimatedSparkline data={ventas} color={tema.primario} height={120} />
-              </div>
-
-              <div style={{ display: 'flex', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, background: '#fafafa', padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: '#888' }}>Top producto</div>
-                  <div style={{ fontWeight: 900 }}>Cámara D-400</div>
-                </div>
-
-                <div style={{ width: 180, background: '#fff', padding: 12, borderRadius: 8, border: `1px solid ${tema.borde}` }}>
-                  <div style={{ fontSize: 12, color: '#888' }}>Conversión</div>
-                  <div style={{ fontWeight: 900 }}>5.6%</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 12px 30px rgba(16,24,40,0.04)' }}>
-              <div style={{ fontWeight: 900 }}>Actividad reciente</div>
-              <div style={{ marginTop: 8, color: '#666' }}>Últimas acciones de usuarios y procesos</div>
-            </div>
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 10px 30px rgba(16,24,40,0.04)', border: '1px solid rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 13, color: '#666' }}>Alertas</div>
+            <div style={{ marginTop: 8, color: '#475569' }}>No hay alertas recientes</div>
           </div>
 
-          <aside style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 12px 30px rgba(16,24,40,0.04)' }}>
-            <div style={{ fontWeight: 900 }}>Atajos</div>
-            <div style={{ marginTop: 8, color: '#666' }}>Backups · Importar · Exportar</div>
-            <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 13, color: '#888' }}>Último backup</div>
-              <div style={{ fontWeight: 800, marginTop: 6 }}>2025-10-20 02:12</div>
-            </div>
-          </aside>
-        </section>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 10px 30px rgba(16,24,40,0.04)', border: '1px solid rgba(0,0,0,0.04)' }}>
+            <div style={{ fontSize: 13, color: '#666' }}>Tareas</div>
+            <div style={{ marginTop: 8, color: '#475569' }}>0 tareas pendientes</div>
+          </div>
+        </aside>
       </main>
     </div>
   );
