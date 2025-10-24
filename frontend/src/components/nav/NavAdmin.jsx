@@ -2,18 +2,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { temas } from '../../styles/temas';
 import CambioTema from '../CambioTema';
+import CambioIdioma from '../CambioIdioma';
 import {
   FaUsers, FaUserFriends, FaBoxOpen, FaBuilding, FaUserTie,
   FaChartLine, FaDatabase, FaFileImport, FaFileExport, FaBars, FaSignOutAlt, FaUserCog, FaHome,
-  FaRegImages,
-  FaImages,
-  FaVideo,
-  FaFilm,
-  FaBook
+  FaRegImages, FaImages, FaVideo, FaFilm, FaBook
 } from 'react-icons/fa';
 
 const THEME_KEY = 'app_theme_selected';
 const COLLAPSE_KEY = 'app_nav_collapsed';
+const LANG_KEY = 'app_selected_language';
 
 const NavAdmin = ({ onNavigate, onLogout }) => {
   const [themeKey, setThemeKey] = useState(() => {
@@ -88,7 +86,6 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
     const innerRef = useRef(null);
     const isOpen = openMenu === id;
 
-    // ensure measured height updates when content/tema changes
     useEffect(() => {
       if (!wrapperRef.current || !innerRef.current) return;
       if (isOpen) {
@@ -105,48 +102,41 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, themeKey, collapsed]);
 
-      useEffect(() => {
-    const onAuthChange = (e) => {
-      // escucha storage y eventos custom 'auth:changed'
-      if (e?.type === 'storage') {
-        if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
-          // si la sesión ya no es válida, redirige a login
+    useEffect(() => {
+      const onAuthChange = (e) => {
+        if (e?.type === 'storage') {
+          if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+            try {
+              const token = localStorage.getItem('app_auth_token');
+              if (!token) window.location.hash = '#/login';
+            } catch { window.location.hash = '#/login'; }
+          } else if (e.key === THEME_KEY) {
+            setThemeKey(e.newValue || 'bosque_claro');
+          } else if (e.key === COLLAPSE_KEY) {
+            setCollapsed(e.newValue === '1');
+          }
+        } else if (e?.type === 'auth:changed' || e === 'auth:changed') {
           try {
             const token = localStorage.getItem('app_auth_token');
-            if (!token) window.location.hash = '#/login';
-          } catch { window.location.hash = '#/login'; }
-        } else if (e.key === THEME_KEY) {
-          setThemeKey(e.newValue || 'bosque_claro');
-        } else if (e.key === COLLAPSE_KEY) {
-          setCollapsed(e.newValue === '1');
-        }
-      } else if (e?.type === 'auth:changed' || e === 'auth:changed') {
-        // notificación interna desde LoginView
-        try {
-          const token = localStorage.getItem('app_auth_token');
-          if (!token) {
+            if (!token) {
+              window.location.hash = '#/login';
+            }
+          } catch {
             window.location.hash = '#/login';
-          } else {
-            // opcional: actualizar usuario si tienes getStoredUser
-            // setUser(getStoredUser());
           }
-        } catch {
-          window.location.hash = '#/login';
         }
-      }
-    };
+      };
 
-    const onAuthChangedEvent = () => onAuthChange('auth:changed');
+      const onAuthChangedEvent = () => onAuthChange('auth:changed');
 
-    window.addEventListener('storage', onAuthChange);
-    window.addEventListener('auth:changed', onAuthChangedEvent);
-    return () => {
-      window.removeEventListener('storage', onAuthChange);
-      window.removeEventListener('auth:changed', onAuthChangedEvent);
-    };
-  }, []);
+      window.addEventListener('storage', onAuthChange);
+      window.addEventListener('auth:changed', onAuthChangedEvent);
+      return () => {
+        window.removeEventListener('storage', onAuthChange);
+        window.removeEventListener('auth:changed', onAuthChangedEvent);
+      };
+    }, []);
 
-    // open/close with smooth height transitions
     const openSmooth = () => {
       const wrap = wrapperRef.current;
       const inner = innerRef.current;
@@ -236,153 +226,184 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
     );
   };
 
-return (
-  <aside style={AsideStyle} aria-label="Navegación administración">
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* Header: título breve + hamburger */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {!collapsed && <div style={{ fontSize: 18, fontWeight: 900, color: tema.texto }}>Administrador</div>}
-        <div style={{ marginLeft: 'auto' }}>
-          <button
-            onClick={toggleCollapse}
-            aria-label={collapsed ? 'Expandir navegación' : 'Colapsar navegación'}
-            title={collapsed ? 'Expandir navegación' : 'Colapsar navegación'}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 10,
-              display: 'grid',
-              placeItems: 'center',
-              background: tema.primario,
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: `0 8px 22px ${tema.acento}33`
-            }}
-          >
-            <FaBars />
-          </button>
+  // language change handler (keeps Nav state in sync)
+  const [lang, setLang] = useState(() => {
+    try { return localStorage.getItem(LANG_KEY) || 'es'; } catch { return 'es'; }
+  });
+  const onLanguageChange = (newLang) => {
+    try { localStorage.setItem(LANG_KEY, newLang); } catch {}
+    setLang(newLang);
+    try {
+      const ev = new CustomEvent('app:language-changed', { detail: { lang: newLang } });
+      window.dispatchEvent(ev);
+    } catch {}
+  };
+
+  return (
+    <aside style={AsideStyle} aria-label="Navegación administración">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Header: título breve + hamburger */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {!collapsed && <div style={{ fontSize: 18, fontWeight: 900, color: tema.texto }}>Administrador</div>}
+          <div style={{ marginLeft: 'auto' }}>
+            <button
+              onClick={toggleCollapse}
+              aria-label={collapsed ? 'Expandir navegación' : 'Colapsar navegación'}
+              title={collapsed ? 'Expandir navegación' : 'Colapsar navegación'}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 10,
+                display: 'grid',
+                placeItems: 'center',
+                background: tema.primario,
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: `0 8px 22px ${tema.acento}33`
+              }}
+            >
+              <FaBars />
+            </button>
+          </div>
         </div>
+
+        {/* Navigation groups */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Botón Inicio colocado encima del grupo CRUDs, respetando diseño */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? 0 : '4px 0 6px 8px' }}>
+            <button
+              onClick={() => handleNav('#/admin/dashboard')}
+              title="Inicio"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: collapsed ? 8 : '8px 12px',
+                borderRadius: 10,
+                background: collapsed ? 'transparent' : `linear-gradient(180deg, ${tema.primario}, ${tema.acento})`,
+                color: collapsed ? tema.texto : '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: collapsed ? 'none' : `0 10px 26px ${tema.acento}33`,
+                width: '100%',
+                fontWeight: 800,
+                justifyContent: collapsed ? 'center' : 'flex-start'
+              }}
+              onMouseEnter={(e) => {
+                if (!collapsed) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 18px 36px ${tema.acento}44`; }
+              }}
+              onMouseLeave={(e) => {
+                if (!collapsed) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 10px 26px ${tema.acento}33`; }
+              }}
+            >
+              <div style={{ width: 20, display: 'flex', justifyContent: 'center', color: collapsed ? tema.primario : '#fff' }}>
+                <FaHome />
+              </div>
+              {!collapsed && <div style={{ fontSize: 14 }}>Inicio</div>}
+            </button>
+          </div>
+
+          <MenuGroup
+            id="cruds"
+            icon={<FaUserCog />}
+            label="CRUD's"
+            items={[
+              { label: 'Usuarios', path: '#/admin/usuarios/DashboardU', icon: <FaUsers /> },
+              { label: 'Clientes', path: '#/admin/clientes/DashboardC', icon: <FaUserFriends /> },
+              { label: 'Productos', path: '#/admin/productos/DashboardP', icon: <FaBoxOpen /> },
+              { label: 'Áreas', path: '#/admin/areas/DashboardA', icon: <FaBuilding /> },
+              { label: 'Trabajadores', path: '#/admin/trabajadores/DashboardT', icon: <FaUserTie /> }
+            ]}
+          />
+
+          <MenuGroup
+            id="reportes"
+            icon={<FaChartLine />}
+            label="REPORTES"
+            items={[
+              { label: 'Reportes de Ventas', path: '#/admin/reportes/ReportesV', icon: <FaChartLine /> },
+              { label: 'Analisis de Ventas', path: '#/admin/reportes/AnalisisV', icon: <FaBook /> }
+            ]}
+          />
+
+          <MenuGroup
+            id="bd"
+            icon={<FaDatabase />}
+            label="BASE DE DATOS"
+            items={[
+              { label: 'Backups', path: '#/admin/bd/backups', icon: <FaFileExport /> },
+              { label: 'Importar Registros', path: '#/admin/bd/importar', icon: <FaFileImport /> }
+            ]}
+          />
+
+          <MenuGroup
+            id="multimedia"
+            icon={<FaFilm />}
+            label="MULTIMEDIA"
+            items={[
+              { label: 'Imagenes', path: '#/admin/multimedia/imagenes', icon: <FaImages /> },
+              { label: 'Fotos', path: '#/admin/multimedia/fotos', icon: <FaRegImages /> },
+              { label: 'Videos', path: '#/admin/multimedia/videos', icon: <FaVideo /> }
+            ]}
+          />
+        </nav>
       </div>
 
-      {/* Navigation groups */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Botón Inicio colocado encima del grupo CRUDs, respetando diseño */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? 0 : '4px 0 6px 8px' }}>
-          <button
-            onClick={() => handleNav('#/admin/dashboard')}
-            title="Inicio"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: collapsed ? 8 : '8px 12px',
-              borderRadius: 10,
-              background: collapsed ? 'transparent' : `linear-gradient(180deg, ${tema.primario}, ${tema.acento})`,
-              color: collapsed ? tema.texto : '#fff',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: collapsed ? 'none' : `0 10px 26px ${tema.acento}33`,
-              width: '100%',
-              fontWeight: 800,
-              justifyContent: collapsed ? 'center' : 'flex-start'
-            }}
-            onMouseEnter={(e) => {
-              if (!collapsed) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 18px 36px ${tema.acento}44`; }
-            }}
-            onMouseLeave={(e) => {
-              if (!collapsed) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 10px 26px ${tema.acento}33`; }
-            }}
-          >
-            <div style={{ width: 20, display: 'flex', justifyContent: 'center', color: collapsed ? tema.primario : '#fff' }}>
-              <FaHome />
+      {/* Footer: CambioIdioma arriba de CambioTema y Cerrar sesión (CambioTema y Logout mantienen su posición relativa original) */}
+      <div style={{
+        marginTop: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+        alignItems: collapsed ? 'center' : 'stretch',
+        justifyContent: 'flex-end',
+        paddingTop: 6
+      }}>
+        {/* Row 1: CambioIdioma centered above the theme + logout row */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: collapsed ? 40 : 160 }}>
+            <CambioIdioma onChange={onLanguageChange} defaultLang={lang} />
+          </div>
+        </div>
+
+        {/* Row 2: same horizontal layout as before: CambioTema on left (or centered when collapsed) and Logout on right */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+            <div style={{ width: collapsed ? 0 : 140, transition: 'width 180ms ease', display: collapsed ? 'none' : 'block' }}>
+              <CambioTema value={themeKey} onChange={(k) => { setThemeKey(k); try { localStorage.setItem(THEME_KEY, k); } catch {} }} />
             </div>
-            {!collapsed && <div style={{ fontSize: 14 }}>Inicio</div>}
-          </button>
-        </div>
+          </div>
 
-        <MenuGroup
-          id="cruds"
-          icon={<FaUserCog />}
-          label="CRUD's"
-          items={[
-            { label: 'Usuarios', path: '#/admin/usuarios/DashboardU', icon: <FaUsers /> },
-            { label: 'Clientes', path: '#/admin/clientes/DashboardC', icon: <FaUserFriends /> },
-            { label: 'Productos', path: '#/admin/productos/DashboardP', icon: <FaBoxOpen /> },
-            { label: 'Áreas', path: '#/admin/areas/DashboardA', icon: <FaBuilding /> },
-            { label: 'Trabajadores', path: '#/admin/trabajadores/DashboardT', icon: <FaUserTie /> }
-          ]}
-        />
-
-        <MenuGroup
-          id="reportes"
-          icon={<FaChartLine />}
-          label="REPORTES"
-          items={[
-            { label: 'Reportes de Ventas', path: '#/admin/reportes/ReportesV', icon: <FaChartLine /> },
-            { label: 'Analisis de Ventas', path: '#/admin/reportes/AnalisisV', icon: <FaBook /> }
-          ]}
-        />
-
-        <MenuGroup
-          id="bd"
-          icon={<FaDatabase />}
-          label="BASE DE DATOS"
-          items={[
-            { label: 'Backups', path: '#/admin/bd/backups', icon: <FaFileExport /> },
-            { label: 'Importar Registros', path: '#/admin/bd/importar', icon: <FaFileImport /> }
-          ]}
-        />
-
-        <MenuGroup
-          id="multimedia"
-          icon={<FaFilm />}
-          label="MULTIMEDIA"
-          items={[
-            { label: 'Imagenes', path: '#/admin/multimedia/imagenes', icon: <FaImages /> },
-            { label: 'Fotos', path: '#/admin/multimedia/fotos', icon: <FaRegImages /> },
-            { label: 'Videos', path: '#/admin/multimedia/videos', icon: <FaVideo /> }
-          ]}
-        />
-      </nav>
-    </div>
-
-    {/* Footer: CambioTema a la izquierda, Cerrar sesión destacado a la derecha */}
-    <div style={{ marginTop: 'auto', display: 'flex', gap: 10, alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between' }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: collapsed ? 40 : 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <CambioTema value={themeKey} onChange={(k) => { setThemeKey(k); try { localStorage.setItem(THEME_KEY, k); } catch {} }} />
+          <div style={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-end' }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: collapsed ? 10 : '10px 14px',
+                borderRadius: 10,
+                background: `linear-gradient(180deg, ${tema.primario}, ${tema.acento})`,
+                color: '#fff',
+                border: 'none',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: `0 12px 28px ${tema.acento}33`,
+                transition: 'transform 140ms ease, box-shadow 140ms ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 18px 36px ${tema.acento}44`; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 12px 28px ${tema.acento}33`; }}
+              title="Cerrar sesión"
+            >
+              <FaSignOutAlt />
+              {!collapsed && <span>Cerrar sesión</span>}
+            </button>
+          </div>
         </div>
       </div>
-
-      <div style={{ marginLeft: collapsed ? 0 : 'auto' }}>
-        <button
-          onClick={handleLogout}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: collapsed ? 10 : '10px 14px',
-            borderRadius: 10,
-            background: `linear-gradient(180deg, ${tema.primario}, ${tema.acento})`,
-            color: '#fff',
-            border: 'none',
-            fontWeight: 800,
-            cursor: 'pointer',
-            boxShadow: `0 12px 28px ${tema.acento}33`,
-            transition: 'transform 140ms ease, box-shadow 140ms ease'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 18px 36px ${tema.acento}44`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 12px 28px ${tema.acento}33`; }}
-          title="Cerrar sesión"
-        >
-          <FaSignOutAlt />
-          {!collapsed && <span>Cerrar sesión</span>}
-        </button>
-      </div>
-    </div>
-  </aside>
-);
+    </aside>
+  );
 };
 
 export default NavAdmin;
