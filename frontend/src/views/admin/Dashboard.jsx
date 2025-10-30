@@ -19,6 +19,7 @@ import VideosView from './multimedia/VideosView';
 
 // Reportes / Analisis
 import AnalisisV from './reportes/AnalisisV';
+import AnalisisView from './spark/AnalisisView';
 
 const THEME_KEY = 'app_theme_selected';
 
@@ -261,6 +262,18 @@ const Dashboard = () => {
         <NavAdmin />
         <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
           <AnalisisV />
+        </main>
+      </div>
+    );
+  }
+
+  // --- Nueva Ruta: Análisis Spark ---
+  if (second === 'spark' && (third === 'analisis' || third === 'AnalisisView')) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+        <NavAdmin />
+        <main style={{ flex: 1, padding: 28, display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          <AnalisisView />
         </main>
       </div>
     );

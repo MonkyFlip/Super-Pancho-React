@@ -323,7 +323,8 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
             label="REPORTES"
             items={[
               { label: 'Reportes de Ventas', path: '#/admin/reportes/ReportesV', icon: <FaChartLine /> },
-              { label: 'Analisis de Ventas', path: '#/admin/reportes/AnalisisV', icon: <FaBook /> }
+              { label: 'Analisis de Ventas', path: '#/admin/reportes/AnalisisV', icon: <FaBook /> },
+              { label: 'Analisis general', path: '#/admin/spark/analisis', icon: <FaBook /> }
             ]}
           />
 
