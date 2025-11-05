@@ -13,7 +13,8 @@ from pymongo.database import Database
 from pydantic import ValidationError
 from bson import ObjectId
 
-from ...models.usuarios_model import UsuarioCreate
+from models.usuarios_model import UsuarioCreate
+
 # Password policy: mínimo 8 caracteres, al menos una mayúscula, una minúscula, un dígito y un carácter especial
 PWD_POLICY_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$")
 
