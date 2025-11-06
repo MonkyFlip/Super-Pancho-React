@@ -25,8 +25,9 @@ from controllers.spark.spark_config import get_spark_session, stop_spark
 # --- NUEVO: Import de rutas principales ---
 from routes import main_bp
 
-# --- Import del CRUD de Usuarios ---
-from controllers.usuarios.routes import usuarios_bp
+# --- Import del CRUDS ---
+from controllers.usuarios.routes import usuarios_bp 
+from controllers.productos.productos_controller import productos_bp
 
 # -----------------------
 # App y configuración
@@ -60,6 +61,7 @@ app.register_blueprint(regresion_bp)   # /regresion
 app.register_blueprint(api_bp)         # /api (explorador)
 app.register_blueprint(spark_bp, url_prefix='/api')  # /api/analisis (Spark)
 app.register_blueprint(usuarios_bp)
+app.register_blueprint(productos_bp)
 
 # -----------------------
 # Migración en background
