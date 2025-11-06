@@ -11,6 +11,13 @@ class ProductoModel:
 
     def get_all(self):
         return list(self.collection.find({"activo": True}))
+    
+    def get_all_paginated(self, skip, limit):
+        cursor = self.collection.find({"activo": True}).skip(skip).limit(limit)
+        return list(cursor)
+    
+    def count(self):
+        return self.collection.count_documents({"activo": True})
 
     def get_by_id(self, id):
         try:
