@@ -310,10 +310,8 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
             label="CRUD's"
             items={[
               { label: 'Usuarios', path: '#/admin/usuarios/DashboardU', icon: <FaUsers /> },
-              { label: 'Clientes', path: '#/admin/clientes/DashboardC', icon: <FaUserFriends /> },
               { label: 'Productos', path: '#/admin/productos/DashboardP', icon: <FaBoxOpen /> },
-              { label: 'Áreas', path: '#/admin/areas/DashboardA', icon: <FaBuilding /> },
-              { label: 'Trabajadores', path: '#/admin/trabajadores/DashboardT', icon: <FaUserTie /> }
+              { label: 'Áreas', path: '#/admin/areas/DashboardA', icon: <FaBuilding /> }
             ]}
           />
 

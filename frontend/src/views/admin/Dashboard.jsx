@@ -8,7 +8,7 @@ import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../servi
 // Importar dashboards de submódulos dentro de admin
 import DashboardU from './usuarios/DashboardU';
 import DashboardC from './clientes/DashboardC';
-import DashboardP from './productos/DashboardP';
+import DashboardP from './productos/DashboardP.jsx';
 import DashboardA from './areas/DashboardA';
 import DashboardT from './trabajadores/DashboardT';
 
@@ -16,7 +16,6 @@ import DashboardT from './trabajadores/DashboardT';
 import ImagenesView from './multimedia/ImagenesView';
 import FotosView from './multimedia/FotosView';
 import VideosView from './multimedia/VideosView';
-
 // Reportes / Analisis
 import AnalisisV from './reportes/AnalisisV';
 import AnalisisView from './spark/AnalisisView';

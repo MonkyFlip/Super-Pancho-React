@@ -10,7 +10,6 @@ producto_model = ProductoModel()
 @productos_bp.route("/productos", methods=["GET"])
 def obtener_productos():
     try:
-        # Obtener page & limit de params ?page=1&limit=10
         page = int(request.args.get("page", 1))
         limit = int(request.args.get("limit", 10))
 
@@ -22,13 +21,15 @@ def obtener_productos():
         productos = producto_model.get_all_paginated(skip, limit)
         total = producto_model.count()
 
-        return jsonify({
+        response = {
             "total": total,
             "page": page,
             "limit": limit,
             "total_pages": (total + limit - 1) // limit,
             "data": productos
-        }), 200
+        }
+
+        return dumps(response), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -11,7 +11,7 @@ import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../../se
 import Paginator from '../../../components/Paginator';
 
 const THEME_KEY = 'app_theme_selected';
-const DEFAULT_PER_PAGE = 10;
+const DEFAULT_PER_PAGE = 12;
 const POLL_THEME_MS = 700;
 
 const iconBtnStyle = (tema) => ({
