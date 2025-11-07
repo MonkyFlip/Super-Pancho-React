@@ -11,16 +11,14 @@ area_model = AreaModel()
 def create_area():
     data = request.get_json()
 
-    if not data or "_id" not in data or "nombre" not in data:
-        return jsonify({"error": "Debe incluir _id y nombre"}), 400
+    if not data or "nombre" not in data:
+        return jsonify({"error": "Debe incluir nombre"}), 400
 
-    existing = area_model.get_area_by_id(data["_id"])
-    if existing:
-        return jsonify({"error": "El área con ese _id ya existe"}), 400
-
-    area_model.create_area(data)
-    return jsonify({"msg": "Área creada"}), 201
-
+    res = area_model.create_area(data)
+    return jsonify({
+        "msg": "Área creada",
+        "id": data["_id"]
+    }), 201
 
 # READ ALL (with pagination)
 @areas_bp.route("/areas", methods=["GET"], endpoint="areas_list")
