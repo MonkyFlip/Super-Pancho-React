@@ -1,0 +1,35 @@
+{
+  "welcome": "Bienvenido a mi aplicación",
+  "changeLanguage": "Cambiar Idioma",
+  "greeting": "Hola, {{name}}",
+  "nav": {
+    "adminTitle": "Administrador",
+    "expandNav": "Expandir navegación",
+    "collapseNav": "Colapsar navegación",
+    "home": "Inicio",
+    "cruds": "CRUDs",
+    "reports": "REPORTES",
+    "database": "BASE DE DATOS",
+    "multimedia": "MULTIMEDIA",
+    "logout": "Cerrar sesión"
+  },
+  "cruds": {
+    "users": "Usuarios",
+    "products": "Productos",
+    "areas": "Áreas"
+  },
+  "reports": {
+    "sales": "Reportes de Ventas",
+    "analysis": "Análisis de Ventas",
+    "generalAnalysis": "Análisis General"
+  },
+  "bd": {
+    "backups": "Backups",
+    "import": "Importar Registros"
+  },
+  "multimedia": {
+    "images": "Imágenes",
+    "photos": "Fotos",
+    "videos": "Vídeos"
+  }
+}
