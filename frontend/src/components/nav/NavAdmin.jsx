@@ -1,5 +1,6 @@
 // src/components/NavAdmin.jsx
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { temas } from '../../styles/temas';
 import CambioTema from '../CambioTema';
 import CambioIdioma from '../CambioIdioma';
@@ -11,7 +12,7 @@ import {
 
 const THEME_KEY = 'app_theme_selected';
 const COLLAPSE_KEY = 'app_nav_collapsed';
-const LANG_KEY = 'app_selected_language';
+
 
 const NavAdmin = ({ onNavigate, onLogout }) => {
   const [themeKey, setThemeKey] = useState(() => {
@@ -226,30 +227,28 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
     );
   };
 
-  // language change handler (keeps Nav state in sync)
-  const [lang, setLang] = useState(() => {
-    try { return localStorage.getItem(LANG_KEY) || 'es'; } catch { return 'es'; }
-  });
-  const onLanguageChange = (newLang) => {
-    try { localStorage.setItem(LANG_KEY, newLang); } catch {}
-    setLang(newLang);
-    try {
-      const ev = new CustomEvent('app:language-changed', { detail: { lang: newLang } });
-      window.dispatchEvent(ev);
-    } catch {}
-  };
+  // cambio de idioma
+  // Obtener la función de traducción (t) y la instancia (i18n)
+  const { t, i18n } = useTranslation();
+
+  // language change handler (ahora usa i18next)
+  const onLanguageChange = (newLang) => {
+    // Esto cambiará el idioma en toda la app y lo guardará
+    // (si configuraste el languagedetector para usar localStorage)
+    i18n.changeLanguage(newLang);
+  };
 
   return (
     <aside style={AsideStyle} aria-label="Navegación administración">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Header: título breve + hamburger */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {!collapsed && <div style={{ fontSize: 18, fontWeight: 900, color: tema.texto }}>Administrador</div>}
+          {!collapsed && <div style={{ fontSize: 18, fontWeight: 900, color: tema.texto }}>{t('nav.adminTitle')}</div>}
           <div style={{ marginLeft: 'auto' }}>
             <button
               onClick={toggleCollapse}
-              aria-label={collapsed ? 'Expandir navegación' : 'Colapsar navegación'}
-              title={collapsed ? 'Expandir navegación' : 'Colapsar navegación'}
+              aria-label={collapsed ? t('nav.expandNav') : t('nav.collapseNav')}
+              title={collapsed ? t('nav.expandNav') : t('nav.collapseNav')}
               style={{
                 width: 44,
                 height: 44,
@@ -274,7 +273,7 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? 0 : '4px 0 6px 8px' }}>
             <button
               onClick={() => handleNav('#/admin/dashboard')}
-              title="Inicio"
+              title={t('nav.home')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -300,52 +299,52 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
               <div style={{ width: 20, display: 'flex', justifyContent: 'center', color: collapsed ? tema.primario : '#fff' }}>
                 <FaHome />
               </div>
-              {!collapsed && <div style={{ fontSize: 14 }}>Inicio</div>}
+              {!collapsed && <div style={{ fontSize: 14 }}>{t('nav.home')}</div>}
             </button>
           </div>
 
           <MenuGroup
-            id="cruds"
-            icon={<FaUserCog />}
-            label="CRUD's"
-            items={[
-              { label: 'Usuarios', path: '#/admin/usuarios/DashboardU', icon: <FaUsers /> },
-              { label: 'Productos', path: '#/admin/productos/DashboardP', icon: <FaBoxOpen /> },
-              { label: 'Áreas', path: '#/admin/areas/DashboardA', icon: <FaBuilding /> }
-            ]}
-          />
+  id="cruds"
+  icon={<FaUserCog />}
+  label={t('nav.cruds')}
+  items={[
+    { label: t('cruds.users'), path: '#/admin/usuarios/DashboardU', icon: <FaUsers /> },
+    { label: t('cruds.products'), path: '#/admin/productos/DashboardP', icon: <FaBoxOpen /> },
+    { label: t('cruds.areas'), path: '#/admin/areas/DashboardA', icon: <FaBuilding /> }
+  ]}
+/>
 
           <MenuGroup
-            id="reportes"
-            icon={<FaChartLine />}
-            label="REPORTES"
-            items={[
-              { label: 'Reportes de Ventas', path: '#/admin/reportes/ReportesV', icon: <FaChartLine /> },
-              { label: 'Analisis de Ventas', path: '#/admin/reportes/AnalisisV', icon: <FaBook /> },
-              { label: 'Analisis general', path: '#/admin/spark/analisis', icon: <FaBook /> }
-            ]}
-          />
+  id="reportes"
+  icon={<FaChartLine />}
+  label={t('nav.reports')}
+  items={[
+    { label: t('reports.sales'), path: '#/admin/reportes/ReportesV', icon: <FaChartLine /> },
+    { label: t('reports.analysis'), path: '#/admin/reportes/AnalisisV', icon: <FaBook /> },
+    { label: t('reports.generalAnalysis'), path: '#/admin/spark/analisis', icon: <FaBook /> }
+  ]}
+/>
 
           <MenuGroup
-            id="bd"
-            icon={<FaDatabase />}
-            label="BASE DE DATOS"
-            items={[
-              { label: 'Backups', path: '#/admin/bd/backups', icon: <FaFileExport /> },
-              { label: 'Importar Registros', path: '#/admin/bd/importar', icon: <FaFileImport /> }
-            ]}
-          />
+            id="bd"
+            icon={<FaDatabase />}
+            label={t('nav.database')}
+            items={[
+              { label: t('bd.backups'), path: '#/admin/bd/backups', icon: <FaFileExport /> },
+              { label: t('bd.import'), path: '#/admin/bd/importar', icon: <FaFileImport /> }
+            ]}
+          />
 
           <MenuGroup
-            id="multimedia"
-            icon={<FaFilm />}
-            label="MULTIMEDIA"
-            items={[
-              { label: 'Imagenes', path: '#/admin/multimedia/imagenes', icon: <FaImages /> },
-              { label: 'Fotos', path: '#/admin/multimedia/fotos', icon: <FaRegImages /> },
-              { label: 'Videos', path: '#/admin/multimedia/videos', icon: <FaVideo /> }
-            ]}
-          />
+            id="multimedia"
+            icon={<FaFilm />}
+            label={t('nav.multimedia')}
+            items={[
+              { label: t('multimedia.images'), path: '#/admin/multimedia/imagenes', icon: <FaImages /> },
+              { label: t('multimedia.photos'), path: '#/admin/multimedia/fotos', icon: <FaRegImages /> },
+              { label: t('multimedia.videos'), path: '#/admin/multimedia/videos', icon: <FaVideo /> }
+            ]}
+          />
         </nav>
       </div>
 
@@ -362,7 +361,7 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
         {/* Row 1: CambioIdioma centered above the theme + logout row */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <div style={{ width: collapsed ? 40 : 160 }}>
-            <CambioIdioma onChange={onLanguageChange} defaultLang={lang} />
+            <CambioIdioma onChange={onLanguageChange} defaultLang={i18n.language} />
           </div>
         </div>
 
@@ -393,10 +392,10 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
               }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 18px 36px ${tema.acento}44`; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 12px 28px ${tema.acento}33`; }}
-              title="Cerrar sesión"
+              title={t('nav.logout')}
             >
               <FaSignOutAlt />
-              {!collapsed && <span>Cerrar sesión</span>}
+              {!collapsed && <span>{t('nav.logout')}</span>}
             </button>
           </div>
         </div>
