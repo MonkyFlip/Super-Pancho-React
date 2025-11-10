@@ -31,5 +31,53 @@
     "images": "Imágenes",
     "photos": "Fotos",
     "videos": "Vídeos"
-  }
+  },
+  "dashboard": {
+    "salesSummary": "Resumen ventas",
+    "last30days": "Últimos 30 días",
+    "kpi": {
+      "monthlySales": "Ventas (mes)",
+      "newClients": "Clientes nuevos"
+    },
+    "clientsActivity": "Actividad clientes",
+    "topProducts": "Top productos",
+    "alerts": "Alertas",
+    "noAlerts": "No hay alertas recientes",
+    "tasks": "Tareas",
+    "pendingTasks": "0 tareas pendientes"
+  },
+  "analysisView": {
+  "title": "Análisis de Ventas",
+  "dateRange": "Datos del {{from}} al {{to}}",
+  "generatedAt": "Análisis generado: {{date}}",
+
+  "kpis": {
+    "incomeTotal": "Ingresos Totales",
+    "salesTotal": "Total Ventas",
+    "ticketAverage": "Ticket Promedio",
+    "salesPerDay": "Ventas Prom./Día",
+    "maxSale": "Venta Máxima",
+    "minSale": "Venta Mínima"
+  },
+
+  "bestDay": {
+    "title": "Día con Más Ventas",
+    "description": "El {{date}} (con {{count}} ventas)"
+  },
+
+  "tables": {
+    "topCustomers": "Top 10 Clientes",
+    "topProducts": "Top 10 Productos",
+
+    "name": "Nombre",
+    "purchases": "Compras",
+    "totalSpent": "Gasto Total",
+
+    "unitsSold": "Unidades Vendidas",
+    "totalIncome": "Ingresos Totales"
+  },
+
+  "loading": "Cargando análisis...",
+  "error": "Error"
+}
 }

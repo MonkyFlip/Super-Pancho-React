@@ -4,6 +4,8 @@ import NavAdmin from '../../components/nav/NavAdmin';
 import { temas } from '../../styles/temas';
 import { getStoredUser as getStoredUserApi } from '../../services/api';
 import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../services/auth';
+import { useTranslation } from "react-i18next";
+
 
 // Importar dashboards de submódulos dentro de admin
 import DashboardU from './usuarios/DashboardU';
@@ -19,6 +21,7 @@ import VideosView from './multimedia/VideosView';
 // Reportes / Analisis
 import AnalisisV from './reportes/AnalisisV';
 import AnalisisView from './spark/AnalisisView';
+
 
 const THEME_KEY = 'app_theme_selected';
 
@@ -108,7 +111,8 @@ const parseHash = () => {
   return parts; // ejemplo: ['admin','usuarios','DashboardU']
 };
 
-const Dashboard = () => {
+function Dashboard() {
+  const { t } = useTranslation();
   const [localThemeKey, setLocalThemeKey] = useState(() => {
     try { return localStorage.getItem(THEME_KEY) || 'bosque_claro'; } catch { return 'bosque_claro'; }
   });
@@ -282,20 +286,59 @@ const Dashboard = () => {
   const ventas = [120, 180, 95, 220, 160, 200, 240, 180, 210, 230];
   const clientes = [6, 9, 4, 12, 7, 10, 11, 9, 8, 13];
   const inventario = [120, 90, 60, 40, 80, 70];
-
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
+  
+   return (
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        width: "100%",
+        background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`,
+        overflowX: "hidden",
+      }}
+    >
       <NavAdmin />
-      <main style={{ flex: 1, padding: 28, display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20, minWidth: 0 }}>
-        <section style={{ background: '#fff', borderRadius: 12, padding: 18, boxShadow: '0 10px 30px rgba(16,24,40,0.04)', border: '1px solid rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+      <main
+        style={{
+          flex: 1,
+          padding: 28,
+          display: "grid",
+          gridTemplateColumns: "1fr 360px",
+          gap: 20,
+          minWidth: 0,
+        }}
+      >
+        <section
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            padding: 18,
+            boxShadow: "0 10px 30px rgba(16,24,40,0.04)",
+            border: "1px solid rgba(0,0,0,0.04)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <h2 style={{ margin: 0 }}>Resumen ventas</h2>
-              <div style={{ color: '#64748b', fontSize: 13 }}>Últimos 30 días</div>
+              <h2 style={{ margin: 0 }}>{t("dashboard.salesSummary")}</h2>
+              <div style={{ color: "#64748b", fontSize: 13 }}>
+                {t("dashboard.last30days")}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <KPI title="Ventas (mes)" value="$12,430" trend="+4.2%" accent="#16a34a" />
-              <KPI title="Clientes nuevos" value="86" trend="+3.1%" accent="#0ea5e9" />
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <KPI
+                title={t("dashboard.kpi.monthlySales")}
+                value="$12,430"
+                trend="+4.2%"
+                accent="#16a34a"
+              />
+              <KPI
+                title={t("dashboard.kpi.newClients")}
+                value="86"
+                trend="+3.1%"
+                accent="#0ea5e9"
+              />
             </div>
           </div>
 
@@ -303,32 +346,82 @@ const Dashboard = () => {
             <AnimatedSparkline data={ventas} color="#2563eb" />
           </div>
 
-          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid rgba(0,0,0,0.04)' }}>
-              <div style={{ fontSize: 13, color: '#666' }}>Actividad clientes</div>
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                padding: 12,
+                borderRadius: 8,
+                border: "1px solid rgba(0,0,0,0.04)",
+              }}
+            >
+              <div style={{ fontSize: 13, color: "#666" }}>
+                {t("dashboard.clientsActivity")}
+              </div>
               <BarSeries data={clientes} color="#06b6d4" />
             </div>
-            <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid rgba(0,0,0,0.04)' }}>
-              <div style={{ fontSize: 13, color: '#666' }}>Top productos</div>
+
+            <div
+              style={{
+                background: "#fff",
+                padding: 12,
+                borderRadius: 8,
+                border: "1px solid rgba(0,0,0,0.04)",
+              }}
+            >
+              <div style={{ fontSize: 13, color: "#666" }}>
+                {t("dashboard.topProducts")}
+              </div>
               <BarSeries data={inventario} color="#f97316" />
             </div>
           </div>
         </section>
 
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 10px 30px rgba(16,24,40,0.04)', border: '1px solid rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: 13, color: '#666' }}>Alertas</div>
-            <div style={{ marginTop: 8, color: '#475569' }}>No hay alertas recientes</div>
+        <aside style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 12,
+              boxShadow: "0 10px 30px rgba(16,24,40,0.04)",
+              border: "1px solid rgba(0,0,0,0.04)",
+            }}
+          >
+            <div style={{ fontSize: 13, color: "#666" }}>
+              {t("dashboard.alerts")}
+            </div>
+            <div style={{ marginTop: 8, color: "#475569" }}>
+              {t("dashboard.noAlerts")}
+            </div>
           </div>
 
-          <div style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 10px 30px rgba(16,24,40,0.04)', border: '1px solid rgba(0,0,0,0.04)' }}>
-            <div style={{ fontSize: 13, color: '#666' }}>Tareas</div>
-            <div style={{ marginTop: 8, color: '#475569' }}>0 tareas pendientes</div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 12,
+              boxShadow: "0 10px 30px rgba(16,24,40,0.04)",
+              border: "1px solid rgba(0,0,0,0.04)",
+            }}
+          >
+            <div style={{ fontSize: 13, color: "#666" }}>
+              {t("dashboard.tasks")}
+            </div>
+            <div style={{ marginTop: 8, color: "#475569" }}>
+              {t("dashboard.pendingTasks")}
+            </div>
           </div>
         </aside>
       </main>
     </div>
   );
-};
+}
 
 export default Dashboard;

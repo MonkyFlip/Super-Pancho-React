@@ -31,5 +31,53 @@
     "images": "Images",
     "photos": "Photos",
     "videos": "Videos"
+  },
+  "dashboard": {
+    "salesSummary": "Sales summary",
+    "last30days": "Last 30 days",
+    "kpi": {
+      "monthlySales": "Sales (month)",
+      "newClients": "New clients"
+    },
+    "clientsActivity": "Client activity",
+    "topProducts": "Top products",
+    "alerts": "Alerts",
+    "noAlerts": "No recent alerts",
+    "tasks": "Tasks",
+    "pendingTasks": "0 pending tasks"
+  },
+  "analysisView": {
+    "title": "Sales Analysis",
+    "dateRange": "Data from {{from}} to {{to}}",
+    "generatedAt": "Analysis generated: {{date}}",
+
+    "kpis": {
+      "incomeTotal": "Total Income",
+      "salesTotal": "Total Sales",
+      "ticketAverage": "Average Ticket",
+      "salesPerDay": "Avg. Sales/Day",
+      "maxSale": "Maximum Sale",
+      "minSale": "Minimum Sale"
+    },
+
+    "bestDay": {
+      "title": "Day with Most Sales",
+      "description": "{{date}} (with {{count}} sales)"
+    },
+
+    "tables": {
+      "topCustomers": "Top 10 Customers",
+      "topProducts": "Top 10 Products",
+
+      "name": "Name",
+      "purchases": "Purchases",
+      "totalSpent": "Total Spent",
+
+      "unitsSold": "Units Sold",
+      "totalIncome": "Total Income"
+    },
+
+    "loading": "Loading analysis...",
+    "error": "Error"
   }
 }
