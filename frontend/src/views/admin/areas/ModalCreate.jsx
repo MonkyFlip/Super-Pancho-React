@@ -2,11 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import api from '../../../services/api';
 import { isAuthenticated } from '../../../services/auth';
+import { useTranslation } from 'react-i18next'; // IMPORTAR
 
 const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
-  const [form, setForm] = useState({
-    nombre: ''
-  });
+  const { t } = useTranslation(); // INSTANCIAR
+  const [form, setForm] = useState({ nombre: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const mountedRef = useRef(false);
@@ -23,24 +23,25 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
     }
   }, [visible]);
 
+  // ... (Efecto de Auth no cambia) ...
   useEffect(() => {
-    const onAuthStorage = (e) => {
-      if (!e) return;
-      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
-        if (!isAuthenticated()) {
-          try { onClose?.(); } catch {}
-          window.location.hash = '#/login';
-        }
-      }
-    };
-    window.addEventListener('storage', onAuthStorage);
-    return () => window.removeEventListener('storage', onAuthStorage);
-  }, [onClose]);
+    const onAuthStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+        if (!isAuthenticated()) {
+          try { onClose?.(); } catch {}
+          window.location.hash = '#/login';
+        }
+      }
+    };
+    window.addEventListener('storage', onAuthStorage);
+    return () => window.removeEventListener('storage', onAuthStorage);
+  }, [onClose]);
 
   if (!visible) return null;
 
   const validate = () => {
-    if (!form.nombre || form.nombre.trim().length < 2) return 'Nombre: mínimo 2 caracteres';
+    if (!form.nombre || form.nombre.trim().length < 2) return t('areas.validation.nameMin2'); // Traducido
     return null;
   };
 
@@ -49,7 +50,7 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
     setError(null);
 
     if (!isAuthenticated()) {
-      setError('Sesión no válida. Por favor, inicia sesión de nuevo.');
+      setError(t('common.errors.invalidSession')); // Traducido
       window.location.hash = '#/login';
       return;
     }
@@ -68,9 +69,9 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
       if (typeof onSaveSuccess === 'function') onSaveSuccess();
     } catch (err) {
       const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.error || err.message || 'Error al crear área';
+      const serverMsg = err?.response?.data?.error || err.message || t('areas.errors.create'); // Traducido
       if (status === 401 || status === 403) {
-        setError('Sesión expirada o no autorizada. Redirigiendo a login...');
+        setError(t('common.errors.sessionExpired')); // Traducido
         try { onClose?.(); } catch {}
         window.location.hash = '#/login';
       } else {
@@ -91,24 +92,24 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
               <FaPlus />
             </div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 16 }}>Nueva área</div>
-              <div style={{ fontSize: 13, color: '#666' }}>Registra una nueva área</div>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>{t('areas.modal.create.title')}</div>
+              <div style={{ fontSize: 13, color: '#666' }}>{t('areas.modal.create.subtitle')}</div>
             </div>
           </div>
 
           <div>
-            <button type="button" onClick={onClose} style={closeBtnStyle(tema)}>Cerrar</button>
+            <button type="button" onClick={onClose} style={closeBtnStyle(tema)}>{t('common.close')}</button>
           </div>
         </div>
 
         {/* Campos del formulario */}
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
 
-          <label style={labelStyle}>Nombre</label>
+          <label style={labelStyle}>{t('common.name')}</label>
           <input
             value={form.nombre}
             onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))}
-            placeholder="Ej. Lácteos"
+            placeholder={t('areas.fields.name_placeholder')}
             style={inputStyle(tema)}
           />
         </div>
@@ -117,9 +118,9 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
 
         {/* Botones */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)}>Cancelar</button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)}>{t('common.cancel')}</button>
           <button type="submit" disabled={loading} style={primaryBtnStyle(tema)}>
-            {loading ? 'Guardando...' : 'Crear'}
+            {loading ? t('common.saving') : t('common.create')}
           </button>
         </div>
       </form>
@@ -127,32 +128,32 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
   );
 };
 
-/* ==== Estilos reutilizados ==== */
+// ... (Estilos no cambian) ...
 const backdropStyle = () => ({
-  position: 'fixed', inset: 0, display: 'grid', placeItems: 'center',
-  background: 'rgba(8,12,20,0.3)', zIndex: 8000
+  position: 'fixed', inset: 0, display: 'grid', placeItems: 'center',
+  background: 'rgba(8,12,20,0.3)', zIndex: 8000
 });
 const modalStyle = (tema) => ({
-  width: 480, maxWidth: 'calc(100% - 32px)', background: '#fff',
-  padding: 18, borderRadius: 12, border: `1px solid ${tema.borde}`,
-  boxShadow: '0 20px 48px rgba(16,24,40,0.08)'
+  width: 480, maxWidth: 'calc(100% - 32px)', background: '#fff',
+  padding: 18, borderRadius: 12, border: `1px solid ${tema.borde}`,
+  boxShadow: '0 20px 48px rgba(16,24,40,0.08)'
 });
 const inputStyle = (tema) => ({
-  padding: 10, borderRadius: 8, border: `1px solid ${tema.borde}`,
-  outline: 'none', background: '#fff', color: tema.texto
+  padding: 10, borderRadius: 8, border: `1px solid ${tema.borde}`,
+  outline: 'none', background: '#fff', color: tema.texto
 });
 const labelStyle = { fontSize: 13, color: '#444' };
 const primaryBtnStyle = (tema) => ({
-  padding: '8px 14px', border: 'none', borderRadius: 8,
-  background: tema.primario, color: '#fff', cursor: 'pointer', fontWeight: 800
+  padding: '8px 14px', border: 'none', borderRadius: 8,
+  background: tema.primario, color: '#fff', cursor: 'pointer', fontWeight: 800
 });
 const secondaryBtnStyle = (tema) => ({
-  padding: '8px 12px', borderRadius: 8,
-  border: '1px solid rgba(16,24,40,0.06)', background: 'transparent', cursor: 'pointer'
+  padding: '8px 12px', borderRadius: 8,
+  border: '1px solid rgba(16,24,40,0.06)', background: 'transparent', cursor: 'pointer'
 });
 const closeBtnStyle = (tema) => ({
-  padding: 8, borderRadius: 8, background: 'transparent', border: 'none',
-  cursor: 'pointer', color: tema.texto
+  padding: 8, borderRadius: 8, background: 'transparent', border: 'none',
+  cursor: 'pointer', color: tema.texto
 });
 
 export default ModalCreate;

@@ -236,6 +236,7 @@
     }
   },
   "common": {
+    "name": "Nombre",
     "close": "Cerrar",
     "cancel": "Cancelar",
     "create": "Crear",
@@ -322,6 +323,52 @@
       "passMin4": "Password: mínimo 4 caracteres",
       "passMin4_if_provided": "La contraseña debe tener al menos 4 caracteres si se proporciona.",
       "invalidRole": "Rol inválido"
+    }
+  },
+  "areas": {
+    "dashboard": {
+      "title": "Gestión de Áreas",
+      "refreshTooltip": "Actualizar lista",
+      "refreshButton": "Actualizar",
+      "addTooltip": "Agregar área",
+      "addButton": "Nuevo"
+    },
+    "table": {
+      "body": {
+        "noData": "No hay áreas registradas"
+      },
+      "summary": "Mostrando {{count}} de {{total}} áreas"
+    },
+    "table_tooltips": {
+      "view": "Ver detalle",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "modal": {
+      "create": {
+        "title": "Nueva área",
+        "subtitle": "Registra una nueva área"
+      },
+      "edit": {
+        "title": "Editar área"
+      },
+      "delete": {
+        "title": "Confirmar eliminación",
+        "description": "¿Eliminar el área \"{{name}}\" (ID {{id}})? Esta acción no se puede deshacer."
+      }
+    },
+    "fields": {
+      "name_placeholder": "Ej. Lácteos"
+    },
+    "errors": {
+      "load": "Error al cargar áreas",
+      "create": "Error al crear área",
+      "update": "Error al actualizar área",
+      "delete": "Error al eliminar el área",
+      "noAreaSelected": "Área no seleccionada."
+    },
+    "validation": {
+      "nameMin2": "Nombre: mínimo 2 caracteres"
     }
   }
 }

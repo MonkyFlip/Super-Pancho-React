@@ -237,6 +237,7 @@
   },
   "common": {
     "close": "Fechar",
+    "name": "Nome",
     "cancel": "Cancelar",
     "create": "Criar",
     "saving": "Salvando...",
@@ -322,6 +323,52 @@
       "passMin4": "Senha: mínimo 4 caracteres",
       "passMin4_if_provided": "A senha deve ter pelo menos 4 caracteres, se fornecida.",
       "invalidRole": "Papel inválido"
+    }
+  },
+  "areas": {
+    "dashboard": {
+      "title": "Gerenciamento de Áreas",
+      "refreshTooltip": "Atualizar lista",
+      "refreshButton": "Atualizar",
+      "addTooltip": "Adicionar área",
+      "addButton": "Novo"
+    },
+    "table": {
+      "body": {
+        "noData": "Nenhuma área registrada"
+      },
+      "summary": "Mostrando {{count}} de {{total}} áreas"
+    },
+    "table_tooltips": {
+      "view": "Ver detalhes",
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "modal": {
+      "create": {
+        "title": "Nova área",
+        "subtitle": "Registrar uma nova área"
+      },
+      "edit": {
+        "title": "Editar área"
+      },
+      "delete": {
+        "title": "Confirmar exclusão",
+        "description": "Excluir a área \"{{name}}\" (ID {{id}})? Esta ação não pode ser desfeita."
+      }
+    },
+    "fields": {
+      "name_placeholder": "Ex: Laticínios"
+    },
+    "errors": {
+      "load": "Erro ao carregar áreas",
+      "create": "Erro ao criar área",
+      "update": "Erro ao atualizar área",
+      "delete": "Erro ao excluir área",
+      "noAreaSelected": "Nenhuma área selecionada."
+    },
+    "validation": {
+      "nameMin2": "Nome: mínimo 2 caracteres"
     }
   }
 }

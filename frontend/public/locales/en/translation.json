@@ -237,6 +237,7 @@
   },
   "common": {
     "close": "Close",
+    "name": "Name",
     "cancel": "Cancel",
     "create": "Create",
     "saving": "Saving...",
@@ -322,6 +323,52 @@
       "passMin4": "Password: minimum 4 characters",
       "passMin4_if_provided": "Password must be at least 4 characters if provided.",
       "invalidRole": "Invalid role"
+    }
+  },
+  "areas": {
+    "dashboard": {
+      "title": "Area Management",
+      "refreshTooltip": "Refresh list",
+      "refreshButton": "Refresh",
+      "addTooltip": "Add area",
+      "addButton": "New"
+    },
+    "table": {
+      "body": {
+        "noData": "No areas registered"
+      },
+      "summary": "Showing {{count}} of {{total}} areas"
+    },
+    "table_tooltips": {
+      "view": "View details",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "modal": {
+      "create": {
+        "title": "New area",
+        "subtitle": "Register a new area"
+      },
+      "edit": {
+        "title": "Edit area"
+      },
+      "delete": {
+        "title": "Confirm deletion",
+        "description": "Delete area \"{{name}}\" (ID {{id}})? This action cannot be undone."
+      }
+    },
+    "fields": {
+      "name_placeholder": "E.g., Dairy"
+    },
+    "errors": {
+      "load": "Error loading areas",
+      "create": "Error creating area",
+      "update": "Error updating area",
+      "delete": "Error deleting area",
+      "noAreaSelected": "No area selected."
+    },
+    "validation": {
+      "nameMin2": "Name: minimum 2 characters"
     }
   }
 }
