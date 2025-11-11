@@ -79,5 +79,177 @@
 
     "loading": "Carregando análise...",
     "error": "Erro"
+  },
+  "analisisV": {
+    "header": {
+      "title": "Painel de Análise — Regressão",
+      "subtitle": "Comparação de modelos e visualização interativa",
+      "refresh": "Atualizar",
+      "refreshTooltip": "Atualizar"
+    },
+    "simple": {
+      "title": "Regressão simples",
+      "subtitle": "Relaciona data (x) com total (y)",
+      "viewTooltip": "Ver simples",
+      "points": "Pontos",
+      "model": "Modelo"
+    },
+    "multiple": {
+      "title": "Regressão múltipla",
+      "subtitle": "Compara características com o alvo para estimar impacto",
+      "viewTooltip": "Ver múltipla",
+      "features": "Características",
+      "usefulRows": "Linhas úteis",
+      "intercept": "Intercepto",
+      "coefficients": "Coeficientes (resumo)"
+    },
+    "download": {
+      "tooltip": "Exportar CSV",
+      "regressionPrefix": "regressao"
+    },
+    "charts": {
+      "observed": "Observado",
+      "prediction": "Predição",
+      "target": "Alvo",
+      "date": "Data",
+      "totalSales": "Vendas totais do turno (un)",
+      "sampleIndex": "Índice da amostra",
+      "value": "Valor"
+    },
+    "interpret": {
+      "title": "Resumo em linguagem simples",
+      "noInfo": "Não há informações para interpretar.",
+      "notEnoughPoints": "Não há pontos suficientes para uma interpretação confiável.",
+      "calcError": "Não foi possível calcular a interpretação estatística.",
+      "increase": "aumento",
+      "decrease": "queda",
+      "stable": "estável",
+      "increases": "aumenta",
+      "decreases": "reduz",
+      "noEffect": "sem efeito claro",
+      "simpleSummary": "Tendência: {{direction}}. Mudança aproximada por dia: {{slope}} unidades. Último valor {{lastY}}, média {{avg}} ({{pct}}% em relação à média).",
+      "noCoefficients": "Nenhum coeficiente detectado para interpretação.",
+      "samplesUsed": "Amostras usadas: {{n}}. ",
+      "coefficientAdvice": "Interpretação: coeficientes positivos indicam associação direta com o total; coeficientes negativos indicam associação inversa. Valores com grande magnitude têm maior impacto."
+    },
+    "loading": "Carregando dados...",
+    "modes": {
+      "simple": "Simples",
+      "multiple": "Múltipla"
+    },
+    "info": {
+      "title": "O que você está vendo",
+      "simple": {
+        "title": "Regressão simples:",
+        "description": "ponto azul = vendas reais; linha verde = predição do modelo. Se a linha sobe com o tempo, significa que as vendas tendem a aumentar; se desce, diminuem."
+      },
+      "multiple": {
+        "title": "Regressão múltipla:",
+        "description": "cada linha mostra como uma característica varia (ex: número de produtos, soma de preços) através das amostras. A linha \"Alvo\" indica o valor real; a linha \"Predição\" mostra o que o modelo estima combinando as características."
+      },
+      "interpretation": {
+        "title": "Interpretação simples:",
+        "description": "leia o resumo em linguagem natural abaixo de cada gráfico; ele informa a tendência e as características com maior efeito no total."
+      }
+    },
+    "quickSummary": {
+      "title": "Resumo Rápido",
+      "status": "Status",
+      "loading": "Carregando...",
+      "ready": "Pronto",
+      "lastQuery": "Última consulta"
+    },
+    "technicalDetails": {
+      "title": "Detalhes Técnicos",
+      "simple": "Simples:",
+      "multiple": "Múltipla:",
+      "points": "pontos",
+      "rows": "linhas"
+    },
+    "rawData": {
+      "title": "Ver respostas brutas",
+      "simple": "Simples (bruto)",
+      "multiple": "Múltipla (bruto)"
+    },
+    "error": {
+      "title": "Erro"
+    }
+  },
+  "products": {
+    "title": "Gestão de Produtos",
+    "toolbar": {
+      "refreshTooltip": "Atualizar lista",
+      "refreshButton": "Atualizar",
+      "addTooltip": "Adicionar produto",
+      "addButton": "Novo"
+    },
+    "table": {
+      "actions": {
+        "viewTooltip": "Ver detalhes",
+        "editTooltip": "Editar",
+        "deleteTooltip": "Excluir"
+      },
+      "status": {
+        "active": "Ativo",
+        "inactive": "Inativo"
+      },
+      "header": {
+        "id": "ID",
+        "name": "Nome",
+        "price": "Preço",
+        "stock": "Estoque",
+        "sku": "SKU",
+        "area": "Área",
+        "status": "Estado",
+        "actions": "Ações"
+      },
+      "body": {
+        "loading": "Carregando...",
+        "noData": "Nenhum produto encontrado"
+      }
+    },
+    "summary": "Mostrando {{count}} de {{total}} produtos",
+    "errors": {
+      "load": "Erro ao carregar produtos"
+    },
+    "modal": {
+      "create": {
+        "title": "Novo produto",
+        "subtitle": "Registre um novo produto"
+      },
+      "edit": {
+        "title": "Editar produto"
+      },
+      "delete": {
+        "title": "Confirmar exclusão",
+        "description": "Excluir o produto \"{{name}}\" (ID {{id}})? Esta ação não pode ser desfeita."
+      }
+    },
+    "fields": {
+      "area": "Área ID",
+      "area.placeholder": "Ex. 1 ou 2",
+      "name.placeholder": "Nome do produto",
+      "price.placeholder": "Preço (ex. 34.90)",
+      "stock.placeholder": "Quantidade disponível",
+      "sku.placeholder": "Ex. SKU-5577",
+      "created_at": "Criado em"
+    }
+  },
+  "common": {
+    "close": "Fechar",
+    "cancel": "Cancelar",
+    "create": "Criar",
+    "saving": "Salvando...",
+    "save_changes": "Salvar alterações",
+    "delete": "Excluir",
+    "deleting": "Excluindo...",
+    "name": "Nome",
+    "price": "Preço",
+    "stock": "Estoque",
+    "sku": "SKU",
+    "status": "Status",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "id": "ID"
   }
 }

@@ -79,5 +79,177 @@
 
     "loading": "Loading analysis...",
     "error": "Error"
+  },
+   "analisisV": {
+    "header": {
+      "title": "Analysis Panel — Regression",
+      "subtitle": "Model comparison and interactive visualization",
+      "refresh": "Refresh",
+      "refreshTooltip": "Refresh"
+    },
+    "simple": {
+      "title": "Simple Regression",
+      "subtitle": "Relates date (x) with total (y)",
+      "viewTooltip": "View simple",
+      "points": "Points",
+      "model": "Model"
+    },
+    "multiple": {
+      "title": "Multiple Regression",
+      "subtitle": "Compares features with target to estimate impact",
+      "viewTooltip": "View multiple",
+      "features": "Features",
+      "usefulRows": "Useful rows",
+      "intercept": "Intercept",
+      "coefficients": "Coefficients (summary)"
+    },
+    "download": {
+      "tooltip": "Export CSV",
+      "regressionPrefix": "regression"
+    },
+    "charts": {
+      "observed": "Observed",
+      "prediction": "Prediction",
+      "target": "Target",
+      "date": "Date",
+      "totalSales": "Total shift sales (units)",
+      "sampleIndex": "Sample index",
+      "value": "Value"
+    },
+    "interpret": {
+      "title": "Summary in simple language",
+      "noInfo": "No information to interpret.",
+      "notEnoughPoints": "Not enough points for reliable interpretation.",
+      "calcError": "Could not calculate statistical interpretation.",
+      "increase": "increase",
+      "decrease": "decrease",
+      "stable": "stable",
+      "increases": "increases",
+      "decreases": "decreases",
+      "noEffect": "no clear effect",
+      "simpleSummary": "Trend: {{direction}}. Approximate change per day: {{slope}} units. Last value {{lastY}}, average {{avg}} ({{pct}}% relative to average).",
+      "noCoefficients": "No coefficients detected for interpretation.",
+      "samplesUsed": "Samples used: {{n}}. ",
+      "coefficientAdvice": "Interpretation: positive coefficients indicate direct association with total; negative coefficients indicate inverse association. Large magnitude values have greater impact."
+    },
+    "loading": "Loading data...",
+    "modes": {
+      "simple": "Simple",
+      "multiple": "Multiple"
+    },
+    "info": {
+      "title": "What you're seeing",
+      "simple": {
+        "title": "Simple Regression:",
+        "description": "blue dot = actual sales; green line = model prediction. If the line goes up over time, it means sales tend to increase; if it goes down, they decrease."
+      },
+      "multiple": {
+        "title": "Multiple Regression:",
+        "description": "each line shows how a feature varies (e.g., number of products, sum of prices) across samples. The \"Target\" line indicates the actual value; the \"Prediction\" line shows what the model estimates by combining the features."
+      },
+      "interpretation": {
+        "title": "Simple interpretation:",
+        "description": "read the summary in natural language below each chart; it tells you the trend and the features with the greatest effect on the total."
+      }
+    },
+    "quickSummary": {
+      "title": "Quick Summary",
+      "status": "Status",
+      "loading": "Loading...",
+      "ready": "Ready",
+      "lastQuery": "Last query"
+    },
+    "technicalDetails": {
+      "title": "Technical Details",
+      "simple": "Simple:",
+      "multiple": "Multiple:",
+      "points": "points",
+      "rows": "rows"
+    },
+    "rawData": {
+      "title": "View raw responses",
+      "simple": "Simple (raw)",
+      "multiple": "Multiple (raw)"
+    },
+    "error": {
+      "title": "Error"
+    }
+  },
+  "products": {
+    "title": "Product Management",
+    "toolbar": {
+      "refreshTooltip": "Refresh list",
+      "refreshButton": "Refresh",
+      "addTooltip": "Add product",
+      "addButton": "New"
+    },
+    "table": {
+      "actions": {
+        "viewTooltip": "View details",
+        "editTooltip": "Edit",
+        "deleteTooltip": "Delete"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "header": {
+        "id": "ID",
+        "name": "Name",
+        "price": "Price",
+        "stock": "Stock",
+        "sku": "SKU",
+        "area": "Area",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "body": {
+        "loading": "Loading...",
+        "noData": "No products found"
+      }
+    },
+    "summary": "Showing {{count}} of {{total}} products",
+    "errors": {
+      "load": "Error loading products"
+    },
+    "modal": {
+      "create": {
+        "title": "New product",
+        "subtitle": "Register a new product"
+      },
+      "edit": {
+        "title": "Edit product"
+      },
+      "delete": {
+        "title": "Confirm deletion",
+        "description": "Delete product \"{{name}}\" (ID {{id}})? This action cannot be undone."
+      }
+    },
+    "fields": {
+      "area": "Area ID",
+      "area.placeholder": "e.g. 1 or 2",
+      "name.placeholder": "Product name",
+      "price.placeholder": "Price (e.g. 34.90)",
+      "stock.placeholder": "Available quantity",
+      "sku.placeholder": "e.g. SKU-5577",
+      "created_at": "Created at"
+    }
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "create": "Create",
+    "saving": "Saving...",
+    "save_changes": "Save changes",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "name": "Name",
+    "price": "Price",
+    "stock": "Stock",
+    "sku": "SKU",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "id": "ID"
   }
 }

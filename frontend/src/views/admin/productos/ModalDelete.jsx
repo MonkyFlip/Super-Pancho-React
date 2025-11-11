@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import { eliminarProducto } from '../../../services/api';
 import { isAuthenticated } from '../../../services/auth';
+import { useTranslation } from 'react-i18next'; // 1. IMPORTAR
 
 const ModalDeleteProducto = ({ visible, onClose, onConfirmSuccess, producto, tema }) => {
+  const { t } = useTranslation(); // 2. INSTANCIAR
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const mountedRef = useRef(false);
@@ -13,7 +15,7 @@ const ModalDeleteProducto = ({ visible, onClose, onConfirmSuccess, producto, tem
     return () => { mountedRef.current = false; };
   }, []);
 
-  // Cerrar modal si la sesión se invalida en otra pestaña
+  // Efecto de Auth (sin cambios)
   useEffect(() => {
     const onAuthStorage = (e) => {
       if (!e) return;
@@ -30,11 +32,15 @@ const ModalDeleteProducto = ({ visible, onClose, onConfirmSuccess, producto, tem
 
   if (!visible || !producto) return null;
 
+  // Helper para obtener el ID, ya que se usa en 2 lugares
+  const productId = typeof producto._id === 'object' ? producto._id.$oid : producto._id;
+
   const confirm = async () => {
     setError(null);
 
+    // 3. TEXTOS DE ERROR (con valores por defecto)
     if (!isAuthenticated()) {
-      setError('Sesión no válida. Por favor inicia sesión de nuevo.');
+      setError(t('common.errors.invalidSession', 'Sesión no válida. Por favor inicia sesión de nuevo.'));
       try { onClose?.(); } catch {}
       window.location.hash = '#/login';
       return;
@@ -42,16 +48,16 @@ const ModalDeleteProducto = ({ visible, onClose, onConfirmSuccess, producto, tem
 
     setLoading(true);
     try {
-      // Algunos productos pueden tener el _id como objeto {$oid: "..."}
-      const id = typeof producto._id === 'object' ? producto._id.$oid : producto._id;
-      await eliminarProducto(id);
+      await eliminarProducto(productId); // Usamos el ID de la variable helper
 
       if (typeof onConfirmSuccess === 'function') onConfirmSuccess();
     } catch (err) {
       const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.error || err.message || 'Error al eliminar producto';
+      // Añadimos una llave 'products.errors.delete' (que deberías agregar a tu JSON)
+      const serverMsg = err?.response?.data?.error || err.message || t('products.errors.delete', 'Error al eliminar producto');
+      
       if (status === 401 || status === 403) {
-        setError('Sesión expirada o no autorizada. Redirigiendo a login...');
+        setError(t('common.errors.sessionExpired', 'Sesión expirada o no autorizada. Redirigiendo a login...'));
         try { onClose?.(); } catch {}
         window.location.hash = '#/login';
       } else {
@@ -75,18 +81,26 @@ const ModalDeleteProducto = ({ visible, onClose, onConfirmSuccess, producto, tem
           </div>
 
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 900, fontSize: 16 }}>Confirmar eliminación</div>
+            {/* 4. TEXTO DE TÍTULO */}
+            <div style={{ fontWeight: 900, fontSize: 16 }}>{t('products.modal.delete.title')}</div>
             <div style={{ color: '#666', marginTop: 6 }}>
-              {`¿Eliminar el producto "${producto.nombre}" (ID ${typeof producto._id === 'object' ? producto._id.$oid : producto._id})? Esta acción no se puede deshacer.`}
+              {/* 5. INTERPOLACIÓN DE TEXTO */}
+              {t('products.modal.delete.description', {
+                name: producto.nombre,
+                id: productId
+              })}
             </div>
             {error && <div style={{ color: '#a33', marginTop: 8 }}>{error}</div>}
           </div>
         </div>
 
+        {/* 6. TEXTOS DE BOTONES */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-          <button onClick={onClose} disabled={loading} style={secondaryBtnStyle(tema)}>Cancelar</button>
+          <button onClick={onClose} disabled={loading} style={secondaryBtnStyle(tema)}>
+            {t('common.cancel')}
+          </button>
           <button onClick={confirm} disabled={loading} style={dangerBtnStyle(tema)}>
-            {loading ? 'Eliminando...' : 'Eliminar'}
+            {loading ? t('common.deleting') : t('common.delete')}
           </button>
         </div>
       </div>
@@ -94,7 +108,7 @@ const ModalDeleteProducto = ({ visible, onClose, onConfirmSuccess, producto, tem
   );
 };
 
-// Estilos
+// Estilos (sin cambios)
 const backdropStyle = () => ({
   position: 'fixed',
   inset: 0,

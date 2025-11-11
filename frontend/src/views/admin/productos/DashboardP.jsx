@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';   // ✅ IMPORT
 import { temas } from '../../../styles/temas';
 import { FaPlus, FaEye, FaEdit, FaTrash, FaSync, FaBox } from 'react-icons/fa';
 import ModalCreate from './ModalCreate';
@@ -10,9 +11,8 @@ import Paginator from '../../../components/Paginator';
 
 const THEME_KEY = 'app_theme_selected';
 const DEFAULT_PER_PAGE = 12;
-const POLL_THEME_MS = 700;
 
-// estilos de botones
+// estilos
 const iconBtnStyle = (tema) => ({
   width: 34,
   height: 34,
@@ -32,88 +32,123 @@ const iconBtnDangerStyle = (tema) => ({
   boxShadow: `0 6px 14px ${tema.acento}22`,
 });
 
-// barra superior
-const Toolbar = ({ tema, onNuevo, onRefresh, loading }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-    <div style={{ fontSize: 15, fontWeight: 800, color: tema.texto, display: 'flex', alignItems: 'center', gap: 8 }}>
-      <FaBox /> <span>Gestión de Productos</span>
-    </div>
+/* ✅ Toolbar con traducciones */
+const Toolbar = ({ tema, onNuevo, onRefresh, loading }) => {
+  const { t } = useTranslation();
 
-    <div style={{ display: 'flex', gap: 8 }}>
-      <button
-        onClick={onRefresh}
-        title="Actualizar lista"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '6px 10px',
-          borderRadius: 8,
-          border: `1px solid ${tema.borde}`,
-          background: '#fff',
-          color: tema.texto,
-          cursor: 'pointer',
-          fontSize: 13,
-        }}
-      >
-        <FaSync style={{ transform: loading ? 'rotate(20deg)' : 'none', transition: 'transform 300ms linear' }} />
-        Actualizar
-      </button>
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: tema.texto, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <FaBox />
+        <span>{t('products.title')}</span>
+      </div>
 
-      <button
-        onClick={onNuevo}
-        title="Agregar producto"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '6px 10px',
-          borderRadius: 8,
-          border: 'none',
-          background: tema.primario,
-          color: '#fff',
-          cursor: 'pointer',
-          boxShadow: `0 8px 18px ${tema.acento}22`,
-          fontWeight: 800,
-          fontSize: 13,
-        }}
-      >
-        <FaPlus /> Nuevo
-      </button>
-    </div>
-  </div>
-);
-
-// fila de tabla
-const TableRow = ({ producto, tema, onView, onEdit, onDelete }) => (
-  <tr style={{ borderBottom: `1px solid ${tema.borde}` }}>
-    <td style={{ padding: '6px 8px', fontSize: 13 }}>
-      {typeof producto._id === 'object' ? producto._id.$oid : producto._id}
-    </td>
-    <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.nombre}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.precio}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.stock}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.sku}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.area_id}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.activo ? 'Activo' : 'Inactivo'}</td>
-    <td style={{ padding: '6px 8px', textAlign: 'right' }}>
-      <div style={{ display: 'inline-flex', gap: 6 }}>
-        <button onClick={() => onView(producto)} title="Ver detalle" style={iconBtnStyle(tema)}>
-          <FaEye />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          onClick={onRefresh}
+          title={t('products.toolbar.refreshTooltip')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 10px',
+            borderRadius: 8,
+            border: `1px solid ${tema.borde}`,
+            background: '#fff',
+            color: tema.texto,
+            cursor: 'pointer',
+            fontSize: 13,
+          }}
+        >
+          <FaSync
+            style={{
+              transform: loading ? 'rotate(20deg)' : 'none',
+              transition: 'transform 300ms linear',
+            }}
+          />
+          {t('products.toolbar.refreshButton')}
         </button>
-        <button onClick={() => onEdit(producto)} title="Editar" style={iconBtnStyle(tema)}>
-          <FaEdit />
-        </button>
-        <button onClick={() => onDelete(producto)} title="Eliminar" style={iconBtnDangerStyle(tema)}>
-          <FaTrash />
+
+        <button
+          onClick={onNuevo}
+          title={t('products.toolbar.addTooltip')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 10px',
+            borderRadius: 8,
+            border: 'none',
+            background: tema.primario,
+            color: '#fff',
+            cursor: 'pointer',
+            boxShadow: `0 8px 18px ${tema.acento}22`,
+            fontWeight: 800,
+            fontSize: 13,
+          }}
+        >
+          <FaPlus /> {t('products.toolbar.addButton')}
         </button>
       </div>
-    </td>
-  </tr>
-);
+    </div>
+  );
+};
 
+/* ✅ FILA */
+const TableRow = ({ producto, tema, onView, onEdit, onDelete }) => {
+  const { t } = useTranslation();
+
+  return (
+    <tr style={{ borderBottom: `1px solid ${tema.borde}` }}>
+      <td style={{ padding: '6px 8px', fontSize: 13 }}>
+        {typeof producto._id === 'object' ? producto._id.$oid : producto._id}
+      </td>
+
+      <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.nombre}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.precio}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.stock}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.sku}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13 }}>{producto.area_id}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13 }}>
+        {producto.activo ? t('products.table.status.active') : t('products.table.status.inactive')}
+      </td>
+
+      <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+        <div style={{ display: 'inline-flex', gap: 6 }}>
+          <button
+            onClick={() => onView(producto)}
+            title={t('products.table.actions.viewTooltip')}
+            style={iconBtnStyle(tema)}
+          >
+            <FaEye />
+          </button>
+
+          <button
+            onClick={() => onEdit(producto)}
+            title={t('products.table.actions.editTooltip')}
+            style={iconBtnStyle(tema)}
+          >
+            <FaEdit />
+          </button>
+
+          <button
+            onClick={() => onDelete(producto)}
+            title={t('products.table.actions.deleteTooltip')}
+            style={iconBtnDangerStyle(tema)}
+          >
+            <FaTrash />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+/* ✅ COMPONENTE PRINCIPAL */
 const DashboardP = () => {
-  const [temaKey, setTemaKey] = useState(() => localStorage.getItem(THEME_KEY) || 'bosque_claro');
+  const { t } = useTranslation();
+
+  const [temaKey] = useState(() => localStorage.getItem('app_theme_selected') || 'bosque_claro');
   const tema = temas[temaKey] || temas.bosque_claro;
 
   const [rows, setRows] = useState([]);
@@ -122,7 +157,7 @@ const DashboardP = () => {
   const [totalCount, setTotalCount] = useState(0);
 
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
+  const [perPage] = useState(DEFAULT_PER_PAGE);
 
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -134,52 +169,31 @@ const DashboardP = () => {
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
+    return () => (mountedRef.current = false);
   }, []);
 
-  // 🔄 Lógica de carga paginada desde la API
   const fetchProductos = useCallback(async () => {
     setLoading(true);
     setError(null);
+
     try {
       const res = await api.get(`/productos?page=${page}&limit=${perPage}`);
       const data = res.data;
+
       if (mountedRef.current) {
         setRows(data.data || []);
         setTotalCount(data.total || 0);
       }
     } catch (err) {
-      setError(err?.response?.data?.error || 'Error al cargar productos');
+      setError(t('products.errors.load'));
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [page, perPage]);
+  }, [page, perPage, t]);
 
   useEffect(() => {
     fetchProductos();
   }, [fetchProductos]);
-
-  const handlePageChange = (newPage) => {
-    if (newPage < 1) return;
-    setPage(newPage);
-  };
-
-  const handleCreate = () => {
-    setShowCreate(false);
-    fetchProductos();
-  };
-
-  const handleEdit = () => {
-    setShowEdit(false);
-    fetchProductos();
-  };
-
-  const handleDelete = () => {
-    setShowDelete(false);
-    fetchProductos();
-  };
 
   return (
     <div
@@ -201,7 +215,12 @@ const DashboardP = () => {
           height: '100%',
         }}
       >
-        <Toolbar tema={tema} onNuevo={() => setShowCreate(true)} onRefresh={fetchProductos} loading={loading} />
+        <Toolbar
+          tema={tema}
+          onNuevo={() => setShowCreate(true)}
+          onRefresh={fetchProductos}
+          loading={loading}
+        />
 
         <div
           style={{
@@ -218,7 +237,7 @@ const DashboardP = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <div style={{ fontSize: 13, color: '#666' }}>
-              Mostrando {rows.length} de {totalCount} productos
+              {t('products.summary', { count: rows.length, total: totalCount })}
             </div>
           </div>
 
@@ -226,14 +245,16 @@ const DashboardP = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ textAlign: 'left', color: tema.texto }}>
-                  <th style={{ padding: '6px 8px' }}>ID</th>
-                  <th style={{ padding: '6px 8px' }}>Nombre</th>
-                  <th style={{ padding: '6px 8px' }}>Precio</th>
-                  <th style={{ padding: '6px 8px' }}>Stock</th>
-                  <th style={{ padding: '6px 8px' }}>SKU</th>
-                  <th style={{ padding: '6px 8px' }}>Área</th>
-                  <th style={{ padding: '6px 8px' }}>Estado</th>
-                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>Acciones</th>
+                  <th style={{ padding: '6px 8px' }}>{t('products.table.header.id')}</th>
+                  <th style={{ padding: '6px 8px' }}>{t('products.table.header.name')}</th>
+                  <th style={{ padding: '6px 8px' }}>{t('products.table.header.price')}</th>
+                  <th style={{ padding: '6px 8px' }}>{t('products.table.header.stock')}</th>
+                  <th style={{ padding: '6px 8px' }}>{t('products.table.header.sku')}</th>
+                  <th style={{ padding: '6px 8px' }}>{t('products.table.header.area')}</th>
+                  <th style={{ padding: '6px 8px' }}>{t('products.table.header.status')}</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'right' }}>
+                    {t('products.table.header.actions')}
+                  </th>
                 </tr>
               </thead>
 
@@ -241,7 +262,7 @@ const DashboardP = () => {
                 {loading && rows.length === 0 && (
                   <tr>
                     <td colSpan="8" style={{ padding: 14, textAlign: 'center', color: '#666' }}>
-                      Cargando...
+                      {t('products.table.body.loading')}
                     </td>
                   </tr>
                 )}
@@ -249,7 +270,7 @@ const DashboardP = () => {
                 {!loading && rows.length === 0 && (
                   <tr>
                     <td colSpan="8" style={{ padding: 14, textAlign: 'center', color: '#666' }}>
-                      No hay productos
+                      {t('products.table.body.noData')}
                     </td>
                   </tr>
                 )}
@@ -281,18 +302,30 @@ const DashboardP = () => {
         </div>
 
         <div style={{ marginTop: 8 }}>
-          <Paginator
-            page={page}
-            perPage={perPage}
-            total={totalCount}
-            onPageChange={handlePageChange}
-          />
+          <Paginator page={page} perPage={perPage} total={totalCount} onPageChange={setPage} />
         </div>
 
-        <ModalCreate visible={showCreate} onClose={() => setShowCreate(false)} onSaveSuccess={handleCreate} tema={tema} />
-        <ModalEdit visible={showEdit} onClose={() => setShowEdit(false)} onSaveSuccess={handleEdit} producto={active} tema={tema} />
+        <ModalCreate
+          visible={showCreate}
+          onClose={() => setShowCreate(false)}
+          onSaveSuccess={fetchProductos}
+          tema={tema}
+        />
+        <ModalEdit
+          visible={showEdit}
+          onClose={() => setShowEdit(false)}
+          onSaveSuccess={fetchProductos}
+          producto={active}
+          tema={tema}
+        />
         <ModalDetail visible={showDetail} onClose={() => setShowDetail(false)} producto={active} tema={tema} />
-        <ModalDelete visible={showDelete} onClose={() => setShowDelete(false)} onDeleteSuccess={handleDelete} producto={active} tema={tema} />
+        <ModalDelete
+          visible={showDelete}
+          onClose={() => setShowDelete(false)}
+          onDeleteSuccess={fetchProductos}
+          producto={active}
+          tema={tema}
+        />
       </div>
     </div>
   );

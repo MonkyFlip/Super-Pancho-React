@@ -2,8 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import { crearProducto } from '../../../services/api';
 import { isAuthenticated } from '../../../services/auth';
+import { useTranslation } from 'react-i18next'; // 1. IMPORTAR
 
 const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
+  const { t } = useTranslation(); // 2. INSTANCIAR EL HOOK
+
   const [form, setForm] = useState({
     nombre: '',
     precio: '',
@@ -50,11 +53,13 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
   if (!visible) return null;
 
   const validate = () => {
-    if (!form.nombre || form.nombre.trim().length < 2) return 'Nombre: mínimo 2 caracteres';
-    if (!form.precio || isNaN(form.precio) || Number(form.precio) <= 0) return 'Precio inválido';
-    if (!form.area_id || isNaN(form.area_id)) return 'Área: debe ser un número válido';
-    if (!form.stock || isNaN(form.stock) || Number(form.stock) < 0) return 'Stock inválido';
-    if (!form.sku || form.sku.trim().length < 3) return 'SKU: mínimo 3 caracteres';
+    // NOTA: Los mensajes de error (ej. 'mínimo 2 caracteres') también deberían ser traducidos.
+    // Te recomiendo agregar llaves como 'common.validation.min2' a tu JSON.
+    if (!form.nombre || form.nombre.trim().length < 2) return `${t('common.name')}: ${t('common.validation.min2', 'mínimo 2 caracteres')}`;
+    if (!form.precio || isNaN(form.precio) || Number(form.precio) <= 0) return `${t('common.price')}: ${t('common.validation.invalid', 'inválido')}`;
+    if (!form.area_id || isNaN(form.area_id)) return `${t('products.fields.area')}: ${t('common.validation.mustBeNumber', 'debe ser un número válido')}`;
+    if (!form.stock || isNaN(form.stock) || Number(form.stock) < 0) return `${t('common.stock')}: ${t('common.validation.invalid', 'inválido')}`;
+    if (!form.sku || form.sku.trim().length < 3) return `${t('common.sku')}: ${t('common.validation.min3', 'mínimo 3 caracteres')}`;
     return null;
   };
 
@@ -62,8 +67,9 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
     e.preventDefault();
     setError(null);
 
+    // NOTA: Estos mensajes de error también deberían estar en tu JSON (ej. 'common.errors.invalidSession')
     if (!isAuthenticated()) {
-      setError('Sesión no válida. Por favor, inicia sesión de nuevo.');
+      setError(t('common.errors.invalidSession', 'Sesión no válida. Por favor, inicia sesión de nuevo.'));
       window.location.hash = '#/login';
       return;
     }
@@ -86,9 +92,10 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
       if (typeof onSaveSuccess === 'function') onSaveSuccess();
     } catch (err) {
       const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.error || err.message || 'Error al crear producto';
+      const serverMsg = err?.response?.data?.error || err.message || t('products.errors.create', 'Error al crear producto');
+      
       if (status === 401 || status === 403) {
-        setError('Sesión expirada o no autorizada. Redirigiendo a login...');
+        setError(t('common.errors.sessionExpired', 'Sesión expirada o no autorizada. Redirigiendo a login...'));
         try { onClose?.(); } catch {}
         window.location.hash = '#/login';
       } else {
@@ -109,59 +116,62 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
               <FaPlus />
             </div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 16 }}>Nuevo producto</div>
-              <div style={{ fontSize: 13, color: '#666' }}>Registra un nuevo producto</div>
+              {/* 3. TEXTOS REEMPLAZADOS */}
+              <div style={{ fontWeight: 900, fontSize: 16 }}>{t('products.modal.create.title')}</div>
+              <div style={{ fontSize: 13, color: '#666' }}>{t('products.modal.create.subtitle')}</div>
             </div>
           </div>
 
           <div>
-            <button type="button" onClick={onClose} style={closeBtnStyle(tema)}>Cerrar</button>
+            <button type="button" onClick={onClose} style={closeBtnStyle(tema)}>
+              {t('common.close')}
+            </button>
           </div>
         </div>
 
         {/* Campos del formulario */}
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-          <label style={labelStyle}>Nombre</label>
+          <label style={labelStyle}>{t('common.name')}</label>
           <input
             value={form.nombre}
             onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))}
-            placeholder="Nombre del producto"
+            placeholder={t('products.fields.name.placeholder')}
             style={inputStyle(tema)}
           />
 
-          <label style={labelStyle}>Precio</label>
+          <label style={labelStyle}>{t('common.price')}</label>
           <input
             type="number"
             step="0.01"
             value={form.precio}
             onChange={(e) => setForm(f => ({ ...f, precio: e.target.value }))}
-            placeholder="Precio (ej. 34.90)"
+            placeholder={t('products.fields.price.placeholder')}
             style={inputStyle(tema)}
           />
 
-          <label style={labelStyle}>Área ID</label>
+          <label style={labelStyle}>{t('products.fields.area')}</label>
           <input
             type="number"
             value={form.area_id}
             onChange={(e) => setForm(f => ({ ...f, area_id: e.target.value }))}
-            placeholder="Ej. 1 o 2"
+            placeholder={t('products.fields.area.placeholder')}
             style={inputStyle(tema)}
           />
 
-          <label style={labelStyle}>Stock</label>
+          <label style={labelStyle}>{t('common.stock')}</label>
           <input
             type="number"
             value={form.stock}
             onChange={(e) => setForm(f => ({ ...f, stock: e.target.value }))}
-            placeholder="Cantidad disponible"
+            placeholder={t('products.fields.stock.placeholder')}
             style={inputStyle(tema)}
           />
 
-          <label style={labelStyle}>SKU</label>
+          <label style={labelStyle}>{t('common.sku')}</label>
           <input
             value={form.sku}
             onChange={(e) => setForm(f => ({ ...f, sku: e.target.value }))}
-            placeholder="Ej. SKU-5577"
+            placeholder={t('products.fields.sku.placeholder')}
             style={inputStyle(tema)}
           />
         </div>
@@ -170,9 +180,11 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
 
         {/* Botones */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)}>Cancelar</button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)}>
+            {t('common.cancel')}
+          </button>
           <button type="submit" disabled={loading} style={primaryBtnStyle(tema)}>
-            {loading ? 'Guardando...' : 'Crear'}
+            {loading ? t('common.saving') : t('common.create')}
           </button>
         </div>
       </form>
@@ -180,7 +192,7 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
   );
 };
 
-/* ==== Estilos reutilizados ==== */
+/* ==== Estilos (sin cambios) ==== */
 const backdropStyle = () => ({
   position: 'fixed', inset: 0, display: 'grid', placeItems: 'center',
   background: 'rgba(8,12,20,0.3)', zIndex: 8000
