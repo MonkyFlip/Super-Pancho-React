@@ -243,13 +243,85 @@
     "save_changes": "Guardar cambios",
     "delete": "Eliminar",
     "deleting": "Eliminando...",
-    "name": "Nombre",
-    "price": "Precio",
-    "stock": "Stock",
-    "sku": "SKU",
-    "status": "Estado",
     "active": "Activo",
     "inactive": "Inactivo",
-    "id": "ID"
+    "id": "ID",
+    "status": "Estado",
+    "actions": "Acciones",
+    "loading": "Cargando...",
+    "errors": {
+      "invalidSession": "Sesión no válida. Por favor, inicia sesión de nuevo.",
+      "sessionExpired": "Sesión expirada o no autorizada. Redirigiendo a login..."
+    }
+  },
+  "users": {
+    "user": "Usuario",
+    "dashboard": {
+      "title": "Gestionar Usuarios",
+      "refreshTooltip": "Actualizar lista",
+      "refreshButton": "Actualizar",
+      "addTooltip": "Agregar usuario",
+      "addButton": "Nuevo"
+    },
+    "table": {
+      "header": {
+        "user": "Usuario",
+        "key": "Key",
+        "role": "Rol",
+        "lastLogin": "Último login"
+      },
+      "body": {
+        "noData": "No hay usuarios"
+      },
+      "summary": "Mostrando {{count}} registros de {{total}}",
+      "summary_partial": "Mostrando {{count}} registros"
+    },
+    "table_tooltips": {
+      "view": "Ver detalle",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "modal": {
+      "create": {
+        "title": "Nuevo usuario",
+        "subtitle": "Crea un usuario con los campos del modelo"
+      },
+      "edit": {
+        "title": "Editar usuario"
+      },
+      "delete": {
+        "title": "Confirmar eliminación",
+        "description": "¿Eliminar al usuario \"{{name}}\" (ID {{id}})? Esta acción no se puede deshacer."
+      }
+    },
+    "fields": {
+      "user": "Usuario",
+      "user_placeholder": "usuario (3-64 caracteres)",
+      "password": "Password",
+      "password_placeholder": "mínimo 4 caracteres",
+      "password_edit_placeholder": "Nueva contraseña (dejar en blanco para no cambiar)",
+      "role": "Rol",
+      "role_placeholder": "Selecciona un rol",
+      "last_login": "Último login",
+      "key": "Key"
+    },
+    "roles": {
+      "admin": "administrador",
+      "worker": "trabajador",
+      "client": "cliente"
+    },
+    "errors": {
+      "load": "Error al cargar usuarios",
+      "create": "Error al crear usuario",
+      "update": "Error al actualizar usuario",
+      "delete": "Error al eliminar usuario",
+      "noUserSelected": "Usuario no seleccionado."
+    },
+    "validation": {
+      "userMin3": "Usuario: mínimo 3 caracteres",
+      "passMin4": "Password: mínimo 4 caracteres",
+      "passMin4_if_provided": "La contraseña debe tener al menos 4 caracteres si se proporciona.",
+      "invalidRole": "Rol inválido"
+    }
   }
 }

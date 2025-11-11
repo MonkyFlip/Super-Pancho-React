@@ -1,10 +1,11 @@
-// src/views/usuarios/ModalEdit.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import { FaEdit } from 'react-icons/fa';
 import { actualizarUsuario } from '../../../services/api';
 import { isAuthenticated } from '../../../services/auth';
+import { useTranslation } from 'react-i18next'; // IMPORTAR
 
 const ModalEdit = ({ visible, onClose, onSaveSuccess, usuario = null, tema }) => {
+  const { t } = useTranslation(); // INSTANCIAR
   const [form, setForm] = useState({ usuario: '', password: '', rol: '', activo: true });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -15,36 +16,36 @@ const ModalEdit = ({ visible, onClose, onSaveSuccess, usuario = null, tema }) =>
     return () => { mountedRef.current = false; };
   }, []);
 
-  // Inicializar form cuando cambia el usuario o se cierra el modal
+  // ... (Efecto de inicialización de form no cambia) ...
   useEffect(() => {
-    if (usuario) {
-      setForm({
-        usuario: usuario.usuario ?? usuario.name ?? '',
-        password: '',
-        rol: usuario.rol ?? usuario.role ?? '',
-        activo: typeof usuario.activo === 'boolean' ? usuario.activo : true
-      });
-      setError(null);
-    } else if (!visible) {
-      setForm({ usuario: '', password: '', rol: '', activo: true });
-      setError(null);
-    }
-  }, [usuario, visible]);
+    if (usuario) {
+      setForm({
+        usuario: usuario.usuario ?? usuario.name ?? '',
+        password: '',
+        rol: usuario.rol ?? usuario.role ?? '',
+        activo: typeof usuario.activo === 'boolean' ? usuario.activo : true
+      });
+      setError(null);
+    } else if (!visible) {
+      setForm({ usuario: '', password: '', rol: '', activo: true });
+      setError(null);
+    }
+  }, [usuario, visible]);
 
-  // Escuchar storage para invalidar sesión si se cerró/actualizó en otra pestaña
+  // ... (Efecto de Auth no cambia) ...
   useEffect(() => {
-    const onAuthStorage = (e) => {
-      if (!e) return;
-      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
-        if (!isAuthenticated()) {
-          try { onClose?.(); } catch {}
-          window.location.hash = '#/login';
-        }
-      }
-    };
-    window.addEventListener('storage', onAuthStorage);
-    return () => window.removeEventListener('storage', onAuthStorage);
-  }, [onClose]);
+    const onAuthStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+        if (!isAuthenticated()) {
+          try { onClose?.(); } catch {}
+          window.location.hash = '#/login';
+        }
+      }
+    };
+    window.addEventListener('storage', onAuthStorage);
+    return () => window.removeEventListener('storage', onAuthStorage);
+  }, [onClose]);
 
   if (!visible) return null;
 
@@ -52,35 +53,35 @@ const ModalEdit = ({ visible, onClose, onSaveSuccess, usuario = null, tema }) =>
     e.preventDefault();
     setError(null);
 
+    // Errores traducidos
     if (!isAuthenticated()) {
-      setError('Sesión no válida. Por favor inicia sesión de nuevo.');
+      setError(t('common.errors.invalidSession'));
       try { onClose?.(); } catch {}
       window.location.hash = '#/login';
       return;
     }
 
     if (!usuario) {
-      setError('Usuario no seleccionado.');
+      setError(t('users.errors.noUserSelected'));
       return;
     }
 
-    // Validaciones básicas
+    // Validaciones traducidas
     if (!form.usuario || form.usuario.trim().length < 3) {
-      setError('El campo usuario debe tener al menos 3 caracteres.');
+      setError(t('users.validation.userMin3'));
       return;
     }
     if (form.password && form.password.length < 4) {
-      setError('La contraseña debe tener al menos 4 caracteres si se proporciona.');
+      setError(t('users.validation.passMin4_if_provided'));
       return;
     }
     if (!form.rol || !['administrador', 'trabajador', 'cliente'].includes(String(form.rol))) {
-      setError('Rol inválido. Debe ser administrador, trabajador o cliente.');
+      setError(t('users.validation.invalidRole'));
       return;
     }
 
     setLoading(true);
     try {
-      // Preparamos payload: no enviar password vacío
       const payload = {
         usuario: form.usuario.trim(),
         rol: form.rol,
@@ -93,9 +94,9 @@ const ModalEdit = ({ visible, onClose, onSaveSuccess, usuario = null, tema }) =>
       if (typeof onSaveSuccess === 'function') onSaveSuccess();
     } catch (err) {
       const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.error || err.message || 'Error al actualizar usuario';
+      const serverMsg = err?.response?.data?.error || err.message || t('users.errors.update'); // Traducido
       if (status === 401 || status === 403) {
-        setError('Sesión expirada o no autorizada. Redirigiendo a login...');
+        setError(t('common.errors.sessionExpired')); // Traducido
         try { onClose?.(); } catch {}
         window.location.hash = '#/login';
       } else {
@@ -115,21 +116,26 @@ const ModalEdit = ({ visible, onClose, onSaveSuccess, usuario = null, tema }) =>
               <FaEdit />
             </div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 16 }}>Editar usuario</div>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>
+                {t('users.modal.edit.title')}
+              </div>
               <div style={{ fontSize: 13, color: '#666' }}>{usuario?.usuario ?? usuario?.name ?? usuario?.usuario_key}</div>
             </div>
           </div>
 
           <div>
-            <button type="button" onClick={onClose} style={closeBtnStyle(tema)}>Cerrar</button>
+            <button type="button" onClick={onClose} style={closeBtnStyle(tema)}>
+              {t('common.close')}
+            </button>
           </div>
         </div>
 
+        {/* Placeholders y selects traducidos */}
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
           <input
             value={form.usuario}
             onChange={(e) => setForm(f => ({ ...f, usuario: e.target.value }))}
-            placeholder="Usuario"
+            placeholder={t('users.fields.user')}
             style={inputStyle(tema)}
             autoComplete="username"
           />
@@ -137,40 +143,47 @@ const ModalEdit = ({ visible, onClose, onSaveSuccess, usuario = null, tema }) =>
           <input
             value={form.password}
             onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
-            placeholder="Nueva contraseña (dejar en blanco para no cambiar)"
+            placeholder={t('users.fields.password_edit_placeholder')}
             style={inputStyle(tema)}
             type="password"
             autoComplete="new-password"
           />
 
           <select value={form.rol} onChange={(e) => setForm(f => ({ ...f, rol: e.target.value }))} style={selectStyle(tema)}>
-            <option value="">Selecciona un rol</option>
-            <option value="administrador">administrador</option>
-            <option value="trabajador">trabajador</option>
-            <option value="cliente">cliente</option>
+            <option value="">{t('users.fields.role_placeholder')}</option>
+            <option value="administrador">{t('users.roles.admin')}</option>
+            <option value="trabajador">{t('users.roles.worker')}</option>
+            <option value="cliente">{t('users.roles.client')}</option>
           </select>
 
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="checkbox" checked={form.activo} onChange={(e) => setForm(f => ({ ...f, activo: e.target.checked }))} /> Activo
+            <input type="checkbox" checked={form.activo} onChange={(e) => setForm(f => ({ ...f, activo: e.target.checked }))} /> 
+            {t('common.active')}
           </label>
         </div>
 
         {error && <div style={{ color: '#a33', marginTop: 8 }}>{error}</div>}
 
+        {/* Botones traducidos */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)} disabled={loading}>Cancelar</button>
-          <button type="submit" disabled={loading} style={primaryBtnStyle(tema)}>{loading ? 'Guardando...' : 'Guardar cambios'}</button>
+          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)} disabled={loading}>
+            {t('common.cancel')}
+          </button>
+          <button type="submit" disabled={loading} style={primaryBtnStyle(tema)}>
+            {loading ? t('common.saving') : t('common.save_changes')}
+          </button>
         </div>
       </form>
     </div>
   );
 };
 
+// ... (Estilos no cambian) ...
 const backdropStyle = () => ({
-  position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', background: 'rgba(8,12,20,0.3)', zIndex: 8000
+  position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', background: 'rgba(8,12,20,0.3)', zIndex: 8000
 });
 const modalStyle = (tema) => ({
-  width: 560, maxWidth: 'calc(100% - 32px)', background: '#fff', padding: 16, borderRadius: 10, border: `1px solid ${tema.borde}`, boxShadow: '0 18px 44px rgba(16,24,40,0.06)'
+  width: 560, maxWidth: 'calc(100% - 32px)', background: '#fff', padding: 16, borderRadius: 10, border: `1px solid ${tema.borde}`, boxShadow: '0 18px 44px rgba(16,24,40,0.06)'
 });
 const inputStyle = (tema) => ({ padding: 10, borderRadius: 8, border: `1px solid ${tema.borde}`, outline: 'none', background: '#fff', color: tema.texto });
 const selectStyle = (tema) => ({ padding: 10, borderRadius: 8, border: `1px solid ${tema.borde}`, background: '#fff', color: tema.texto });

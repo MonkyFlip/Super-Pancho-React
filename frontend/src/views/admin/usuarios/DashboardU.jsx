@@ -1,4 +1,3 @@
-// src/views/usuarios/DashboardU.jsx
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { temas } from '../../../styles/temas';
 import { FaPlus, FaEye, FaEdit, FaTrash, FaSync, FaHome } from 'react-icons/fa';
@@ -9,11 +8,14 @@ import ModalDelete from './ModalDelete';
 import api from '../../../services/api';
 import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../../services/auth';
 import Paginator from '../../../components/Paginator';
+import { useTranslation } from 'react-i18next';
 
+// AÑADE ESTAS CONSTANTES QUE FALTAN
 const THEME_KEY = 'app_theme_selected';
 const DEFAULT_PER_PAGE = 12;
 const POLL_THEME_MS = 700;
 
+// (Estilos de botones no cambian)
 const iconBtnStyle = (tema) => ({
   width: 34, height: 34, borderRadius: 8, border: 'none',
   background: 'transparent', display: 'grid', placeItems: 'center',
@@ -27,74 +29,84 @@ const iconBtnDangerStyle = (tema) => ({
   boxShadow: `0 6px 14px ${tema.acento}22`
 });
 
-const Toolbar = ({ tema, onNuevo, onRefresh, loading }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
-    <div style={{ fontSize: 15, fontWeight: 800, color: tema.texto, display: 'flex', alignItems: 'center', gap: 8 }}>
-      <FaHome /> <span>Gestionar Usuarios</span>
-    </div>
-    <div style={{ display: 'flex', gap: 8 }}>
-      <button
-        onClick={onRefresh}
-        title="Actualizar lista"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '6px 10px',
-          borderRadius: 8,
-          border: `1px solid ${tema.borde}`,
-          background: '#fff',
-          color: tema.texto,
-          cursor: 'pointer',
-          fontSize: 13
-        }}
-      >
-        <FaSync style={{ transform: loading ? 'rotate(20deg)' : 'none', transition: 'transform 300ms linear' }} /> Actualizar
-      </button>
-
-      <button
-        onClick={onNuevo}
-        title="Agregar usuario"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '6px 10px',
-          borderRadius: 8,
-          border: 'none',
-          background: tema.primario,
-          color: '#fff',
-          cursor: 'pointer',
-          boxShadow: `0 8px 18px ${tema.acento}22`,
-          fontWeight: 800,
-          fontSize: 13
-        }}
-      >
-        <FaPlus /> Nuevo
-      </button>
-    </div>
-  </div>
-);
-
-const TableRow = ({ usuario, tema, onView, onEdit, onDelete }) => (
-  <tr style={{ borderBottom: `1px solid ${tema.borde}` }}>
-    <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, whiteSpace: 'nowrap', maxWidth: 160 }}>{usuario.id}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto }}>{usuario.usuario}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{usuario.usuario_key}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, whiteSpace: 'nowrap' }}>{usuario.rol}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, whiteSpace: 'nowrap' }}>{usuario.activo ? 'Activo' : 'Inactivo'}</td>
-    <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, whiteSpace: 'nowrap' }}>{usuario.last_login ?? '-'}</td>
-    <td style={{ padding: '6px 8px', textAlign: 'right' }}>
-      <div style={{ display: 'inline-flex', gap: 6 }}>
-        <button onClick={() => onView(usuario)} title="Ver detalle" style={iconBtnStyle(tema)}><FaEye /></button>
-        <button onClick={() => onEdit(usuario)} title="Editar" style={iconBtnStyle(tema)}><FaEdit /></button>
-        <button onClick={() => onDelete(usuario)} title="Eliminar" style={iconBtnDangerStyle(tema)}><FaTrash /></button>
+const Toolbar = ({ tema, onNuevo, onRefresh, loading }) => {
+  const { t } = useTranslation();
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: tema.texto, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <FaHome /> <span>{t('users.dashboard.title')}</span>
       </div>
-    </td>
-  </tr>
-);
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          onClick={onRefresh}
+          title={t('users.dashboard.refreshTooltip')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 10px',
+            borderRadius: 8,
+            border: `1px solid ${tema.borde}`,
+            background: '#fff',
+            color: tema.texto,
+            cursor: 'pointer',
+            fontSize: 13
+          }}
+        >
+          <FaSync style={{ transform: loading ? 'rotate(20deg)' : 'none', transition: 'transform 300ms linear' }} /> 
+          {t('users.dashboard.refreshButton')}
+        </button>
+
+        <button
+          onClick={onNuevo}
+          title={t('users.dashboard.addTooltip')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '6px 10px',
+            borderRadius: 8,
+            border: 'none',
+            background: tema.primario,
+            color: '#fff',
+            cursor: 'pointer',
+            boxShadow: `0 8px 18px ${tema.acento}22`,
+            fontWeight: 800,
+            fontSize: 13
+          }}
+        >
+          <FaPlus /> {t('users.dashboard.addButton')}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const TableRow = ({ usuario, tema, onView, onEdit, onDelete }) => {
+  const { t } = useTranslation();
+  return (
+    <tr style={{ borderBottom: `1px solid ${tema.borde}` }}>
+      <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, whiteSpace: 'nowrap', maxWidth: 160 }}>{usuario.id}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto }}>{usuario.usuario}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{usuario.usuario_key}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, whiteSpace: 'nowrap' }}>{usuario.rol}</td>
+      <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, whiteSpace: 'nowrap' }}>
+        {usuario.activo ? t('common.active') : t('common.inactive')}
+      </td>
+      <td style={{ padding: '6px 8px', fontSize: 13, color: tema.texto, whiteSpace: 'nowrap' }}>{usuario.last_login ?? '-'}</td>
+      <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+        <div style={{ display: 'inline-flex', gap: 6 }}>
+          <button onClick={() => onView(usuario)} title={t('users.table_tooltips.view')} style={iconBtnStyle(tema)}><FaEye /></button>
+          <button onClick={() => onEdit(usuario)} title={t('users.table_tooltips.edit')} style={iconBtnStyle(tema)}><FaEdit /></button>
+          <button onClick={() => onDelete(usuario)} title={t('users.table_tooltips.delete')} style={iconBtnDangerStyle(tema)}><FaTrash /></button>
+        </div>
+      </td>
+    </tr>
+  );
+};
 
 const DashboardU = () => {
+  const { t } = useTranslation();
   const [temaKey, setTemaKey] = useState(() => {
     try { return localStorage.getItem(THEME_KEY) || 'bosque_claro'; } catch { return 'bosque_claro'; }
   });
@@ -205,7 +217,7 @@ const DashboardU = () => {
   };
 
   const fetchUsuarios = useCallback(async ({ page: reqPage = page, perPage: reqPerPage = perPage } = {}) => {
-    if (!ensureLocalAdmin()) { setError('Sesión no válida'); return; }
+    if (!ensureLocalAdmin()) { setError(t('common.errors.invalidSession')); return; }
     setLoading(true);
     setError(null);
 
@@ -242,12 +254,12 @@ const DashboardU = () => {
         setPerPage(reqPerPage);
       }
     } catch (err) {
-      const msg = err?.response?.data?.error || err.message || 'Error al cargar usuarios';
+      const msg = err?.response?.data?.error || err.message || t('users.errors.load');
       if (mountedRef.current) setError(msg);
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [ensureLocalAdmin, page, perPage]);
+  }, [ensureLocalAdmin, page, perPage, t]);
 
   useEffect(() => {
     if (ensureLocalAdmin()) fetchUsuarios({ page, perPage });
@@ -271,7 +283,7 @@ const DashboardU = () => {
       boxSizing: 'border-box',
       background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`,
       height: '100vh',
-      overflow: 'hidden' // evita que la página general se estire
+      overflow: 'hidden'
     }}>
       <div style={{
         maxWidth: 1200,
@@ -292,33 +304,42 @@ const DashboardU = () => {
           flex: '1 1 auto',
           display: 'flex',
           flexDirection: 'column',
-          minHeight: 0 // importante para que el hijo con overflow funcione en flex
+          minHeight: 0
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div style={{ fontSize: 13, color: '#666' }}>Mostrando {rows.length} registros {totalCount !== null ? `de ${totalCount}` : ''}</div>
+            <div style={{ fontSize: 13, color: '#666' }}>
+              {totalCount > 0
+                ? t('users.table.summary', { count: rows.length, total: totalCount })
+                : t('users.table.summary_partial', { count: rows.length })
+              }
+            </div>
           </div>
 
           <div style={{ overflow: 'auto', flex: '1 1 auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto', fontSize: 13 }}>
               <thead>
                 <tr style={{ textAlign: 'left', color: tema.texto }}>
-                  <th style={{ padding: '6px 8px', fontSize: 12 }}>ID</th>
-                  <th style={{ padding: '6px 8px', fontSize: 12 }}>Usuario</th>
-                  <th style={{ padding: '6px 8px', fontSize: 12 }}>Key</th>
-                  <th style={{ padding: '6px 8px', fontSize: 12 }}>Rol</th>
-                  <th style={{ padding: '6px 8px', fontSize: 12 }}>Estado</th>
-                  <th style={{ padding: '6px 8px', fontSize: 12 }}>Último login</th>
-                  <th style={{ padding: '6px 8px', fontSize: 12, textAlign: 'right' }}>Acciones</th>
+                  <th style={{ padding: '6px 8px', fontSize: 12 }}>{t('common.id')}</th>
+                  <th style={{ padding: '6px 8px', fontSize: 12 }}>{t('users.table.header.user')}</th>
+                  <th style={{ padding: '6px 8px', fontSize: 12 }}>{t('users.table.header.key')}</th>
+                  <th style={{ padding: '6px 8px', fontSize: 12 }}>{t('users.table.header.role')}</th>
+                  <th style={{ padding: '6px 8px', fontSize: 12 }}>{t('common.status')}</th>
+                  <th style={{ padding: '6px 8px', fontSize: 12 }}>{t('users.table.header.lastLogin')}</th>
+                  <th style={{ padding: '6px 8px', fontSize: 12, textAlign: 'right' }}>{t('common.actions')}</th>
                 </tr>
               </thead>
 
               <tbody>
                 {loading && rows.length === 0 && (
-                  <tr><td colSpan="7" style={{ padding: 14, textAlign: 'center', color: '#666' }}>Cargando...</td></tr>
+                  <tr><td colSpan="7" style={{ padding: 14, textAlign: 'center', color: '#666' }}>
+                    {t('common.loading')}
+                  </td></tr>
                 )}
 
                 {!loading && rows.length === 0 && (
-                  <tr><td colSpan="7" style={{ padding: 14, textAlign: 'center', color: '#666' }}>No hay usuarios</td></tr>
+                  <tr><td colSpan="7" style={{ padding: 14, textAlign: 'center', color: '#666' }}>
+                    {t('users.table.body.noData')}
+                  </td></tr>
                 )}
 
                 {rows.map(u => (
@@ -348,7 +369,6 @@ const DashboardU = () => {
           onSaveSuccess={handleCreate}
           tema={tema}
         />
-
         <ModalEdit
           visible={showEdit}
           onClose={() => setShowEdit(false)}
@@ -356,18 +376,16 @@ const DashboardU = () => {
           usuario={active}
           tema={tema}
         />
-
         <ModalDetail
           visible={showDetail}
           onClose={() => setShowDetail(false)}
           usuario={active}
           tema={tema}
         />
-
         <ModalDelete
           visible={showDelete}
           onClose={() => setShowDelete(false)}
-          onDeleteSuccess={handleDelete}
+          onConfirmSuccess={handleDelete}
           usuario={active}
           tema={tema}
         />

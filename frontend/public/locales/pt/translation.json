@@ -243,13 +243,85 @@
     "save_changes": "Salvar alterações",
     "delete": "Excluir",
     "deleting": "Excluindo...",
-    "name": "Nome",
-    "price": "Preço",
-    "stock": "Estoque",
-    "sku": "SKU",
-    "status": "Status",
     "active": "Ativo",
     "inactive": "Inativo",
-    "id": "ID"
+    "id": "ID",
+    "status": "Status",
+    "actions": "Ações",
+    "loading": "Carregando...",
+    "errors": {
+      "invalidSession": "Sessão inválida. Por favor, faça login novamente.",
+      "sessionExpired": "Sessão expirada ou não autorizada. Redirecionando para o login..."
+    }
+  },
+  "users": {
+    "user": "Usuário",
+    "dashboard": {
+      "title": "Gerenciamento de Usuários",
+      "refreshTooltip": "Atualizar lista",
+      "refreshButton": "Atualizar",
+      "addTooltip": "Adicionar usuário",
+      "addButton": "Novo"
+    },
+    "table": {
+      "header": {
+        "user": "Usuário",
+        "key": "Chave",
+        "role": "Papel",
+        "lastLogin": "Último login"
+      },
+      "body": {
+        "noData": "Nenhum usuário encontrado"
+      },
+      "summary": "Mostrando {{count}} registros de {{total}}",
+      "summary_partial": "Mostrando {{count}} registros"
+    },
+    "table_tooltips": {
+      "view": "Ver detalhes",
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "modal": {
+      "create": {
+        "title": "Novo usuário",
+        "subtitle": "Crie um usuário com os campos do modelo"
+      },
+      "edit": {
+        "title": "Editar usuário"
+      },
+      "delete": {
+        "title": "Confirmar exclusão",
+        "description": "Excluir o usuário \"{{name}}\" (ID {{id}})? Esta ação não pode ser desfeita."
+      }
+    },
+    "fields": {
+      "user": "Usuário",
+      "user_placeholder": "usuário (3-64 caracteres)",
+      "password": "Senha",
+      "password_placeholder": "mínimo 4 caracteres",
+      "password_edit_placeholder": "Nova senha (deixe em branco para não alterar)",
+      "role": "Papel",
+      "role_placeholder": "Selecione um papel",
+      "last_login": "Último login",
+      "key": "Chave"
+    },
+    "roles": {
+      "admin": "administrador",
+      "worker": "trabalhador",
+      "client": "cliente"
+    },
+    "errors": {
+      "load": "Erro ao carregar usuários",
+      "create": "Erro ao criar usuário",
+      "update": "Erro ao atualizar usuário",
+      "delete": "Erro ao excluir usuário",
+      "noUserSelected": "Nenhum usuário selecionado."
+    },
+    "validation": {
+      "userMin3": "Usuário: mínimo 3 caracteres",
+      "passMin4": "Senha: mínimo 4 caracteres",
+      "passMin4_if_provided": "A senha deve ter pelo menos 4 caracteres, se fornecida.",
+      "invalidRole": "Papel inválido"
+    }
   }
 }

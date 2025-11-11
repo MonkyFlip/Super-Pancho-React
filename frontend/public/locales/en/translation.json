@@ -243,13 +243,85 @@
     "save_changes": "Save changes",
     "delete": "Delete",
     "deleting": "Deleting...",
-    "name": "Name",
-    "price": "Price",
-    "stock": "Stock",
-    "sku": "SKU",
-    "status": "Status",
     "active": "Active",
     "inactive": "Inactive",
-    "id": "ID"
+    "id": "ID",
+    "status": "Status",
+    "actions": "Actions",
+    "loading": "Loading...",
+    "errors": {
+      "invalidSession": "Invalid session. Please log in again.",
+      "sessionExpired": "Session expired or unauthorized. Redirecting to login..."
+    }
+  },
+  "users": {
+    "user": "User",
+    "dashboard": {
+      "title": "User Management",
+      "refreshTooltip": "Refresh list",
+      "refreshButton": "Refresh",
+      "addTooltip": "Add user",
+      "addButton": "New"
+    },
+    "table": {
+      "header": {
+        "user": "User",
+        "key": "Key",
+        "role": "Role",
+        "lastLogin": "Last login"
+      },
+      "body": {
+        "noData": "No users found"
+      },
+      "summary": "Showing {{count}} records of {{total}}",
+      "summary_partial": "Showing {{count}} records"
+    },
+    "table_tooltips": {
+      "view": "View details",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "modal": {
+      "create": {
+        "title": "New user",
+        "subtitle": "Create a user with the model fields"
+      },
+      "edit": {
+        "title": "Edit user"
+      },
+      "delete": {
+        "title": "Confirm deletion",
+        "description": "Delete user \"{{name}}\" (ID {{id}})? This action cannot be undone."
+      }
+    },
+    "fields": {
+      "user": "User",
+      "user_placeholder": "username (3-64 characters)",
+      "password": "Password",
+      "password_placeholder": "minimum 4 characters",
+      "password_edit_placeholder": "New password (leave blank to not change)",
+      "role": "Role",
+      "role_placeholder": "Select a role",
+      "last_login": "Last login",
+      "key": "Key"
+    },
+    "roles": {
+      "admin": "administrator",
+      "worker": "worker",
+      "client": "client"
+    },
+    "errors": {
+      "load": "Error loading users",
+      "create": "Error creating user",
+      "update": "Error updating user",
+      "delete": "Error deleting user",
+      "noUserSelected": "No user selected."
+    },
+    "validation": {
+      "userMin3": "User: minimum 3 characters",
+      "passMin4": "Password: minimum 4 characters",
+      "passMin4_if_provided": "Password must be at least 4 characters if provided.",
+      "invalidRole": "Invalid role"
+    }
   }
 }

@@ -1,10 +1,11 @@
-// src/views/usuarios/ModalCreate.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import { FaUserPlus } from 'react-icons/fa';
 import { crearUsuario } from '../../../services/api';
 import { isAuthenticated } from '../../../services/auth';
+import { useTranslation } from 'react-i18next'; // IMPORTAR
 
 const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
+  const { t } = useTranslation(); // INSTANCIAR
   const [form, setForm] = useState({
     usuario: '',
     password: '',
@@ -32,26 +33,28 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
     }
   }, [visible]);
 
+  // ... (Efecto de Auth no cambia) ...
   useEffect(() => {
-    const onAuthStorage = (e) => {
-      if (!e) return;
-      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
-        if (!isAuthenticated()) {
-          try { onClose?.(); } catch {}
-          window.location.hash = '#/login';
-        }
-      }
-    };
-    window.addEventListener('storage', onAuthStorage);
-    return () => window.removeEventListener('storage', onAuthStorage);
-  }, [onClose]);
+    const onAuthStorage = (e) => {
+      if (!e) return;
+      if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
+        if (!isAuthenticated()) {
+          try { onClose?.(); } catch {}
+          window.location.hash = '#/login';
+        }
+      }
+    };
+    window.addEventListener('storage', onAuthStorage);
+    return () => window.removeEventListener('storage', onAuthStorage);
+  }, [onClose]);
 
   if (!visible) return null;
 
   const validate = () => {
-    if (!form.usuario || form.usuario.trim().length < 3) return 'Usuario: mínimo 3 caracteres';
-    if (!form.password || form.password.length < 4) return 'Password: mínimo 4 caracteres';
-    if (!['administrador', 'trabajador', 'cliente'].includes(form.rol)) return 'Rol inválido';
+    // Validaciones traducidas
+    if (!form.usuario || form.usuario.trim().length < 3) return t('users.validation.userMin3');
+    if (!form.password || form.password.length < 4) return t('users.validation.passMin4');
+    if (!['administrador', 'trabajador', 'cliente'].includes(form.rol)) return t('users.validation.invalidRole');
     return null;
   };
 
@@ -60,7 +63,7 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
     setError(null);
 
     if (!isAuthenticated()) {
-      setError('Sesión no válida. Por favor, inicia sesión de nuevo.');
+      setError(t('common.errors.invalidSession')); // Traducido
       window.location.hash = '#/login';
       return;
     }
@@ -73,7 +76,6 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
 
     setLoading(true);
     try {
-      // payload coincide con UsuarioCreate: { usuario, password, rol, activo }
       await crearUsuario({
         usuario: form.usuario.trim(),
         password: form.password,
@@ -83,9 +85,9 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
       if (typeof onSaveSuccess === 'function') onSaveSuccess();
     } catch (err) {
       const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.error || err.message || 'Error al crear usuario';
+      const serverMsg = err?.response?.data?.error || err.message || t('users.errors.create'); // Traducido
       if (status === 401 || status === 403) {
-        setError('Sesión expirada o no autorizada. Redirigiendo a login...');
+        setError(t('common.errors.sessionExpired')); // Traducido
         try { onClose?.(); } catch {}
         window.location.hash = '#/login';
       } else {
@@ -105,43 +107,48 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
               <FaUserPlus />
             </div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 16 }}>Nuevo usuario</div>
-              <div style={{ fontSize: 13, color: '#666' }}>Crea un usuario con los campos del modelo</div>
+              {/* Textos traducidos */}
+              <div style={{ fontWeight: 900, fontSize: 16 }}>{t('users.modal.create.title')}</div>
+              <div style={{ fontSize: 13, color: '#666' }}>{t('users.modal.create.subtitle')}</div>
             </div>
           </div>
 
           <div>
-            <button type="button" onClick={onClose} style={closeBtnStyle(tema)}>Cerrar</button>
+            <button type="button" onClick={onClose} style={closeBtnStyle(tema)}>
+              {t('common.close')}
+            </button>
           </div>
         </div>
 
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-          <label style={{ fontSize: 13, color: '#444' }}>Usuario</label>
+          {/* Labels y placeholders traducidos */}
+          <label style={{ fontSize: 13, color: '#444' }}>{t('users.fields.user')}</label>
           <input
             value={form.usuario}
             onChange={(e) => setForm(f => ({ ...f, usuario: e.target.value }))}
-            placeholder="usuario (3-64 caracteres)"
+            placeholder={t('users.fields.user_placeholder')}
             style={inputStyle(tema)}
           />
 
-          <label style={{ fontSize: 13, color: '#444' }}>Password</label>
+          <label style={{ fontSize: 13, color: '#444' }}>{t('users.fields.password')}</label>
           <input
             type="password"
             value={form.password}
             onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
-            placeholder="mínimo 4 caracteres"
+            placeholder={t('users.fields.password_placeholder')}
             style={inputStyle(tema)}
           />
 
-          <label style={{ fontSize: 13, color: '#444' }}>Rol</label>
+          <label style={{ fontSize: 13, color: '#444' }}>{t('users.fields.role')}</label>
           <select
             value={form.rol}
             onChange={(e) => setForm(f => ({ ...f, rol: e.target.value }))}
             style={{ ...inputStyle(tema), padding: 10 }}
           >
-            <option value="administrador">administrador</option>
-            <option value="trabajador">trabajador</option>
-            <option value="cliente">cliente</option>
+            {/* Opciones traducidas */}
+            <option value="administrador">{t('users.roles.admin')}</option>
+            <option value="trabajador">{t('users.roles.worker')}</option>
+            <option value="cliente">{t('users.roles.client')}</option>
           </select>
 
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -149,33 +156,39 @@ const ModalCreate = ({ visible, onClose, onSaveSuccess, tema }) => {
               type="checkbox"
               checked={form.activo}
               onChange={(e) => setForm(f => ({ ...f, activo: e.target.checked }))}
-            /> Activo
+            /> {t('common.active')}
           </label>
         </div>
 
         {error && <div style={{ color: '#a33', marginTop: 8 }}>{error}</div>}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)}>Cancelar</button>
-          <button type="submit" disabled={loading} style={primaryBtnStyle(tema)}>{loading ? 'Guardando...' : 'Crear'}</button>
+          {/* Botones traducidos */}
+          <button type="button" onClick={onClose} style={secondaryBtnStyle(tema)}>
+            {t('common.cancel')}
+          </button>
+          <button type="submit" disabled={loading} style={primaryBtnStyle(tema)}>
+            {loading ? t('common.saving') : t('common.create')}
+          </button>
         </div>
       </form>
     </div>
   );
 };
 
+// ... (Estilos no cambian) ...
 const backdropStyle = () => ({
-  position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', background: 'rgba(8,12,20,0.3)', zIndex: 8000
+  position: 'fixed', inset: 0, display: 'grid', placeItems: 'center', background: 'rgba(8,12,20,0.3)', zIndex: 8000
 });
 const modalStyle = (tema) => ({
-  width: 520, maxWidth: 'calc(100% - 32px)', background: '#fff', padding: 18, borderRadius: 12, border: `1px solid ${tema.borde}`, boxShadow: '0 20px 48px rgba(16,24,40,0.08)'
+  width: 520, maxWidth: 'calc(100% - 32px)', background: '#fff', padding: 18, borderRadius: 12, border: `1px solid ${tema.borde}`, boxShadow: '0 20px 48px rgba(16,24,40,0.08)'
 });
 const inputStyle = (tema) => ({ padding: 10, borderRadius: 8, border: `1px solid ${tema.borde}`, outline: 'none', background: '#fff', color: tema.texto });
 const primaryBtnStyle = (tema) => ({
-  padding: '8px 14px', border: 'none', borderRadius: 8, background: tema.primario, color: '#fff', cursor: 'pointer', fontWeight: 800
+  padding: '8px 14px', border: 'none', borderRadius: 8, background: tema.primario, color: '#fff', cursor: 'pointer', fontWeight: 800
 });
 const secondaryBtnStyle = (tema) => ({
-  padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(16,24,40,0.06)', background: 'transparent', cursor: 'pointer'
+  padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(16,24,40,0.06)', background: 'transparent', cursor: 'pointer'
 });
 const closeBtnStyle = (tema) => ({ padding: 8, borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: tema.texto });
 
