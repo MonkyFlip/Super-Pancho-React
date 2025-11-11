@@ -1,0 +1,399 @@
+{
+  "welcome": "Welcome to my application",
+  "changeLanguage": "Change Language",
+  "greeting": "Hello, {{name}}",
+  "nav": {
+    "adminTitle": "Administrator",
+    "expandNav": "Expand navigation",
+    "collapseNav": "Collapse navigation",
+    "home": "Home",
+    "cruds": "CRUDs",
+    "reports": "REPORTS",
+    "database": "DATABASE",
+    "multimedia": "MULTIMEDIA",
+    "logout": "Log Out"
+  },
+  "cruds": {
+    "users": "Users",
+    "products": "Products",
+    "areas": "Areas"
+  },
+  "reports": {
+    "sales": "Sales Reports",
+    "analysis": "Sales Analysis",
+    "generalAnalysis": "General Analysis"
+  },
+  "bd": {
+    "backups": "Backups",
+    "import": "Import Records"
+  },
+  "multimedia": {
+    "images": "Images",
+    "photos": "Photos",
+    "videos": "Videos"
+  },
+  "dashboard": {
+    "salesSummary": "Sales summary",
+    "last30days": "Last 30 days",
+    "kpi": {
+      "monthlySales": "Sales (month)",
+      "newClients": "New clients"
+    },
+    "clientsActivity": "Client activity",
+    "topProducts": "Top products",
+    "alerts": "Alerts",
+    "noAlerts": "No recent alerts",
+    "tasks": "Tasks",
+    "pendingTasks": "0 pending tasks"
+  },
+  "analysisView": {
+    "title": "Sales Analysis",
+    "dateRange": "Data from {{from}} to {{to}}",
+    "generatedAt": "Analysis generated: {{date}}",
+
+    "kpis": {
+      "incomeTotal": "Total Income",
+      "salesTotal": "Total Sales",
+      "ticketAverage": "Average Ticket",
+      "salesPerDay": "Avg. Sales/Day",
+      "maxSale": "Maximum Sale",
+      "minSale": "Minimum Sale"
+    },
+
+    "bestDay": {
+      "title": "Day with Most Sales",
+      "description": "{{date}} (with {{count}} sales)"
+    },
+
+    "tables": {
+      "topCustomers": "Top 10 Customers",
+      "topProducts": "Top 10 Products",
+
+      "name": "Name",
+      "purchases": "Purchases",
+      "totalSpent": "Total Spent",
+
+      "unitsSold": "Units Sold",
+      "totalIncome": "Total Income"
+    },
+
+    "loading": "Loading analysis...",
+    "error": "Error"
+  },
+   "analisisV": {
+    "header": {
+      "title": "Analysis Panel — Regression",
+      "subtitle": "Model comparison and interactive visualization",
+      "refresh": "Refresh",
+      "refreshTooltip": "Refresh"
+    },
+    "simple": {
+      "title": "Simple Regression",
+      "subtitle": "Relates date (x) with total (y)",
+      "viewTooltip": "View simple",
+      "points": "Points",
+      "model": "Model"
+    },
+    "multiple": {
+      "title": "Multiple Regression",
+      "subtitle": "Compares features with target to estimate impact",
+      "viewTooltip": "View multiple",
+      "features": "Features",
+      "usefulRows": "Useful rows",
+      "intercept": "Intercept",
+      "coefficients": "Coefficients (summary)"
+    },
+    "download": {
+      "tooltip": "Export CSV",
+      "regressionPrefix": "regression"
+    },
+    "charts": {
+      "observed": "Observed",
+      "prediction": "Prediction",
+      "target": "Target",
+      "date": "Date",
+      "totalSales": "Total shift sales (units)",
+      "sampleIndex": "Sample index",
+      "value": "Value"
+    },
+    "interpret": {
+      "title": "Summary in simple language",
+      "noInfo": "No information to interpret.",
+      "notEnoughPoints": "Not enough points for reliable interpretation.",
+      "calcError": "Could not calculate statistical interpretation.",
+      "increase": "increase",
+      "decrease": "decrease",
+      "stable": "stable",
+      "increases": "increases",
+      "decreases": "decreases",
+      "noEffect": "no clear effect",
+      "simpleSummary": "Trend: {{direction}}. Approximate change per day: {{slope}} units. Last value {{lastY}}, average {{avg}} ({{pct}}% relative to average).",
+      "noCoefficients": "No coefficients detected for interpretation.",
+      "samplesUsed": "Samples used: {{n}}. ",
+      "coefficientAdvice": "Interpretation: positive coefficients indicate direct association with total; negative coefficients indicate inverse association. Large magnitude values have greater impact."
+    },
+    "loading": "Loading data...",
+    "modes": {
+      "simple": "Simple",
+      "multiple": "Multiple"
+    },
+    "info": {
+      "title": "What you're seeing",
+      "simple": {
+        "title": "Simple Regression:",
+        "description": "blue dot = actual sales; green line = model prediction. If the line goes up over time, it means sales tend to increase; if it goes down, they decrease."
+      },
+      "multiple": {
+        "title": "Multiple Regression:",
+        "description": "each line shows how a feature varies (e.g., number of products, sum of prices) across samples. The \"Target\" line indicates the actual value; the \"Prediction\" line shows what the model estimates by combining the features."
+      },
+      "interpretation": {
+        "title": "Simple interpretation:",
+        "description": "read the summary in natural language below each chart; it tells you the trend and the features with the greatest effect on the total."
+      }
+    },
+    "quickSummary": {
+      "title": "Quick Summary",
+      "status": "Status",
+      "loading": "Loading...",
+      "ready": "Ready",
+      "lastQuery": "Last query"
+    },
+    "technicalDetails": {
+      "title": "Technical Details",
+      "simple": "Simple:",
+      "multiple": "Multiple:",
+      "points": "points",
+      "rows": "rows"
+    },
+    "rawData": {
+      "title": "View raw responses",
+      "simple": "Simple (raw)",
+      "multiple": "Multiple (raw)"
+    },
+    "error": {
+      "title": "Error"
+    }
+  },
+  "products": {
+    "title": "Product Management",
+    "toolbar": {
+      "refreshTooltip": "Refresh list",
+      "refreshButton": "Refresh",
+      "addTooltip": "Add product",
+      "addButton": "New"
+    },
+    "table": {
+      "actions": {
+        "viewTooltip": "View details",
+        "editTooltip": "Edit",
+        "deleteTooltip": "Delete"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "header": {
+        "id": "ID",
+        "name": "Name",
+        "price": "Price",
+        "stock": "Stock",
+        "sku": "SKU",
+        "area": "Area",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "body": {
+        "loading": "Loading...",
+        "noData": "No products found"
+      }
+    },
+    "summary": "Showing {{count}} of {{total}} products",
+    "errors": {
+      "load": "Error loading products"
+    },
+    "modal": {
+      "create": {
+        "title": "New product",
+        "subtitle": "Register a new product"
+      },
+      "edit": {
+        "title": "Edit product"
+      },
+      "delete": {
+        "title": "Confirm deletion",
+        "description": "Delete product \"{{name}}\" (ID {{id}})? This action cannot be undone."
+      }
+    },
+    "fields": {
+      "area": "Area ID",
+      "area.placeholder": "e.g. 1 or 2",
+      "name.placeholder": "Product name",
+      "price.placeholder": "Price (e.g. 34.90)",
+      "stock.placeholder": "Available quantity",
+      "sku.placeholder": "e.g. SKU-5577",
+      "created_at": "Created at"
+    }
+  },
+  "common": {
+    "close": "Close",
+    "name": "Name",
+    "cancel": "Cancel",
+    "create": "Create",
+    "saving": "Saving...",
+    "save_changes": "Save changes",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "active": "Active",
+    "inactive": "Inactive",
+    "id": "ID",
+    "status": "Status",
+    "actions": "Actions",
+    "loading": "Loading...",
+    "errors": {
+      "invalidSession": "Invalid session. Please log in again.",
+      "sessionExpired": "Session expired or unauthorized. Redirecting to login..."
+    }
+  },
+  "users": {
+    "user": "User",
+    "dashboard": {
+      "title": "User Management",
+      "refreshTooltip": "Refresh list",
+      "refreshButton": "Refresh",
+      "addTooltip": "Add user",
+      "addButton": "New"
+    },
+    "table": {
+      "header": {
+        "user": "User",
+        "key": "Key",
+        "role": "Role",
+        "lastLogin": "Last login"
+      },
+      "body": {
+        "noData": "No users found"
+      },
+      "summary": "Showing {{count}} records of {{total}}",
+      "summary_partial": "Showing {{count}} records"
+    },
+    "table_tooltips": {
+      "view": "View details",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "modal": {
+      "create": {
+        "title": "New user",
+        "subtitle": "Create a user with the model fields"
+      },
+      "edit": {
+        "title": "Edit user"
+      },
+      "delete": {
+        "title": "Confirm deletion",
+        "description": "Delete user \"{{name}}\" (ID {{id}})? This action cannot be undone."
+      }
+    },
+    "fields": {
+      "user": "User",
+      "user_placeholder": "username (3-64 characters)",
+      "password": "Password",
+      "password_placeholder": "minimum 4 characters",
+      "password_edit_placeholder": "New password (leave blank to not change)",
+      "role": "Role",
+      "role_placeholder": "Select a role",
+      "last_login": "Last login",
+      "key": "Key"
+    },
+    "roles": {
+      "admin": "administrator",
+      "worker": "worker",
+      "client": "client"
+    },
+    "errors": {
+      "load": "Error loading users",
+      "create": "Error creating user",
+      "update": "Error updating user",
+      "delete": "Error deleting user",
+      "noUserSelected": "No user selected."
+    },
+    "validation": {
+      "userMin3": "User: minimum 3 characters",
+      "passMin4": "Password: minimum 4 characters",
+      "passMin4_if_provided": "Password must be at least 4 characters if provided.",
+      "invalidRole": "Invalid role"
+    }
+  },
+  "areas": {
+    "dashboard": {
+      "title": "Area Management",
+      "refreshTooltip": "Refresh list",
+      "refreshButton": "Refresh",
+      "addTooltip": "Add area",
+      "addButton": "New"
+    },
+    "table": {
+      "body": {
+        "noData": "No areas registered"
+      },
+      "summary": "Showing {{count}} of {{total}} areas"
+    },
+    "table_tooltips": {
+      "view": "View details",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "modal": {
+      "create": {
+        "title": "New area",
+        "subtitle": "Register a new area"
+      },
+      "edit": {
+        "title": "Edit area"
+      },
+      "delete": {
+        "title": "Confirm deletion",
+        "description": "Delete area \"{{name}}\" (ID {{id}})? This action cannot be undone."
+      }
+    },
+    "fields": {
+      "name_placeholder": "E.g., Dairy"
+    },
+    "errors": {
+      "load": "Error loading areas",
+      "create": "Error creating area",
+      "update": "Error updating area",
+      "delete": "Error deleting area",
+      "noAreaSelected": "No area selected."
+    },
+    "validation": {
+      "nameMin2": "Name: minimum 2 characters"
+    }
+  },
+  "media": {
+    "types": {
+      "photo": "photo",
+      "photo_plural": "photos",
+      "image": "image",
+      "image_plural": "images",
+      "video": "video",
+      "video_plural": "videos"
+    },
+    "gallery": {
+      "title": "{{type}} Gallery",
+      "total": "({{count}} total)",
+      "loading": "Loading {{type}}...",
+      "error": "Error: {{error}}",
+      "notFound": "No {{type}} found."
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{currentPage}} of {{totalPages}}"
+    },
+    "video": {
+      "fallback": "Your browser does not support videos."
+    }
+  }
+}

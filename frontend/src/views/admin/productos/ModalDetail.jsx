@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { FaInfoCircle } from 'react-icons/fa';
 import { isAuthenticated } from '../../../services/auth';
+import { useTranslation } from 'react-i18next'; // 1. IMPORTAR
 
 const ModalDetail = ({ visible, onClose, producto, tema }) => {
+  const { t } = useTranslation(); // 2. INSTANCIAR
   const mountedRef = useRef(false);
 
   useEffect(() => {
@@ -11,6 +13,7 @@ const ModalDetail = ({ visible, onClose, producto, tema }) => {
   }, []);
 
   useEffect(() => {
+    // ... (Efecto de Auth sin cambios)
     const onAuthStorage = (e) => {
       if (!e) return;
       if (e.key === 'app_auth_token' || e.key === 'app_auth_user' || e.key === null) {
@@ -32,7 +35,7 @@ const ModalDetail = ({ visible, onClose, producto, tema }) => {
     return null;
   }
 
-  // Normalización de campos para asegurar que no haya errores si vienen con distintas estructuras
+  // Normalización de campos (sin cambios)
   const idValue =
     producto._id?.$oid || producto._id || producto.id || '-';
   const nombre = producto.nombre || '-';
@@ -70,69 +73,75 @@ const ModalDetail = ({ visible, onClose, producto, tema }) => {
               <FaInfoCircle />
             </div>
             <div>
+              {/* Estos son datos, no se traducen */}
               <div style={{ fontWeight: 900, fontSize: 16 }}>{nombre}</div>
               <div style={{ fontSize: 13, color: '#666' }}>{sku}</div>
             </div>
           </div>
 
           <div>
-            <button onClick={onClose} style={closeBtnStyle(tema)}>Cerrar</button>
+            <button onClick={onClose} style={closeBtnStyle(tema)}>
+              {t('common.close')}
+            </button>
           </div>
         </div>
 
-        {/* Contenido del detalle */}
+        {/* Contenido del detalle - 3. TEXTOS REEMPLAZADOS */}
         <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
-            <div style={labelStyle}>Nombre</div>
+            <div style={labelStyle}>{t('common.name')}</div>
             <div style={valueStyle}>{nombre}</div>
           </div>
 
           <div>
-            <div style={labelStyle}>Precio</div>
+            <div style={labelStyle}>{t('common.price')}</div>
             <div style={valueStyle}>{precio}</div>
           </div>
 
           <div>
-            <div style={labelStyle}>Área ID</div>
+            <div style={labelStyle}>{t('products.fields.area')}</div>
             <div style={valueStyle}>{areaId}</div>
           </div>
 
           <div>
-            <div style={labelStyle}>Stock</div>
+            <div style={labelStyle}>{t('common.stock')}</div>
             <div style={valueStyle}>{stock}</div>
           </div>
 
           <div>
-            <div style={labelStyle}>SKU</div>
+            <div style={labelStyle}>{t('common.sku')}</div>
             <div style={valueStyle}>{sku}</div>
           </div>
 
           <div>
-            <div style={labelStyle}>Estado</div>
-            <div style={valueStyle}>{activo ? 'Activo' : 'Inactivo'}</div>
+            <div style={labelStyle}>{t('common.status')}</div>
+            {/* 4. TRADUCCIÓN CONDICIONAL */}
+            <div style={valueStyle}>{activo ? t('common.active') : t('common.inactive')}</div>
           </div>
 
           <div>
-            <div style={labelStyle}>Creado el</div>
+            <div style={labelStyle}>{t('products.fields.created_at')}</div>
             <div style={valueStyle}>{createdAt}</div>
           </div>
 
           <div>
-            <div style={labelStyle}>ID</div>
+            <div style={labelStyle}>{t('common.id')}</div>
             <div style={{ ...valueStyle, wordBreak: 'break-all' }}>{idValue}</div>
           </div>
         </div>
 
         {/* Botón inferior */}
         <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={primaryBtnStyle(tema)}>Cerrar</button>
+          <button onClick={onClose} style={primaryBtnStyle(tema)}>
+            {t('common.close')}
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-/* ==== Estilos reutilizados ==== */
+/* ==== Estilos reutilizados (sin cambios) ==== */
 const backdropStyle = () => ({
   position: 'fixed',
   inset: 0,

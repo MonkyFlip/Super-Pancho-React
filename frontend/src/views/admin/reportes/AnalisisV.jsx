@@ -4,6 +4,7 @@ import { temas } from '../../../styles/temas';
 import { ventasRegresionSimple, ventasRegresionMultiple } from '../../../services/api';
 import { FaSync, FaChartLine, FaLayerGroup, FaDownload, FaInfoCircle } from 'react-icons/fa';
 import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../../services/auth';
+import { useTranslation, Trans } from "react-i18next";
 
 import {
   Chart as ChartJS,
@@ -69,6 +70,7 @@ const style = {
 };
 
 export default function AnalisisV() {
+  const { t } = useTranslation();
   const [temaKey, setTemaKey] = useState(() => {
     try { return localStorage.getItem(THEME_KEY) || 'bosque_claro'; } catch { return 'bosque_claro'; }
   });
@@ -178,12 +180,13 @@ export default function AnalisisV() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `regresion_${mode}_${Date.now()}.csv`;
+    const prefix = t('analisisV.download.regressionPrefix', 'regresion');
+    a.download = `${prefix}_${mode}_${Date.now()}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  }, [mode]);
+  }, [mode, t]);
 
   // --- Chart builders with white background and visible prediction line ---
   const buildSimpleChartData = useCallback(() => {
@@ -191,7 +194,7 @@ export default function AnalisisV() {
     return {
       datasets: [
         {
-          label: 'Observado',
+          label: t('analisisV.charts.observed', 'Observado'),
           data: pts.map(p => ({ x: p.x, y: p.y })),
           backgroundColor: 'rgba(30,64,175,0.95)',
           borderColor: 'rgba(30,64,175,0.95)',
@@ -199,7 +202,7 @@ export default function AnalisisV() {
           pointRadius: 3,
         },
         {
-          label: 'Predicción',
+          label: t('analisisV.charts.prediction', 'Predicción'),
           data: pts.map(p => ({ x: p.x, y: p.y_pred })),
           borderColor: 'rgba(5,150,105,0.98)',
           backgroundColor: 'rgba(5,150,105,0.12)',
@@ -211,7 +214,7 @@ export default function AnalisisV() {
         }
       ]
     };
-  }, [simpleResult]);
+  }, [simpleResult, t]);
 
   const simpleOptions = {
     parsing: false,
@@ -223,12 +226,12 @@ export default function AnalisisV() {
       x: {
         type: 'time',
         time: { unit: 'day' },
-        title: { display: true, text: 'Fecha', color: tema.texto },
+        title: { display: true, text: t('analisisV.charts.date', 'Fecha'), color: tema.texto },
         grid: { color: '#e6eef8' },
         ticks: { color: '#374151' }
       },
       y: {
-        title: { display: true, text: 'Ventas totales del turno (u)', color: tema.texto },
+        title: { display: true, text: t('analisisV.charts.totalSales', 'Ventas totales del turno (u)'), color: tema.texto },
         grid: { color: '#eef2f6' },
         ticks: { color: '#374151' }
       }
@@ -253,7 +256,7 @@ export default function AnalisisV() {
     }));
     if (mapped.targetSeries?.data?.length) {
       datasets.push({
-        label: 'Target',
+        label: t('analisisV.charts.target', 'Target'),
         data: mapped.targetSeries.data,
         borderColor: 'rgba(190,24,93,0.96)',
         backgroundColor: 'rgba(190,24,93,0.06)',
@@ -264,7 +267,7 @@ export default function AnalisisV() {
     }
     if (mapped.predSeries?.data?.length) {
       datasets.push({
-        label: 'Predicción',
+        label: t('analisisV.charts.prediction', 'Predicción'),
         data: mapped.predSeries.data,
         borderColor: 'rgba(14,165,233,0.95)',
         backgroundColor: 'rgba(14,165,233,0.06)',
@@ -274,7 +277,7 @@ export default function AnalisisV() {
       });
     }
     return { datasets };
-  }, [multipleResult]);
+  }, [multipleResult, t]);
 
   const multipleOptions = {
     parsing: false,
@@ -283,8 +286,8 @@ export default function AnalisisV() {
       tooltip: { mode: 'index', intersect: false }
     },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'Índice de muestra', color: tema.texto }, grid: { color: '#eef2f6' }, ticks: { color: '#374151' } },
-      y: { title: { display: true, text: 'Valor', color: tema.texto }, grid: { color: '#eef2f6' }, ticks: { color: '#374151' } }
+      x: { type: 'linear', title: { display: true, text: t('analisisV.charts.sampleIndex', 'Índice de muestra'), color: tema.texto }, grid: { color: '#eef2f6' }, ticks: { color: '#374151' } },
+      y: { title: { display: true, text: t('analisisV.charts.value', 'Valor'), color: tema.texto }, grid: { color: '#eef2f6' }, ticks: { color: '#374151' } }
     },
     maintainAspectRatio: false,
     layout: { padding: { top: 8, right: 12, bottom: 6, left: 6 } }
@@ -292,9 +295,9 @@ export default function AnalisisV() {
 
   // --- Human readable interpretations ---
   const interpretSimple = useCallback((raw) => {
-    if (!raw || !raw.ok) return "No hay información para interpretar.";
+    if (!raw || !raw.ok) return t('analisisV.interpret.noInfo', 'No hay información para interpretar.');
     const pts = (raw.samples && raw.samples.x && raw.samples.y) ? raw.samples.x.map((x,i) => ({ x, y: raw.samples.y[i] })) : [];
-    if (pts.length < 2) return "No hay suficientes puntos para una interpretación confiable.";
+    if (pts.length < 2) return t('analisisV.interpret.notEnoughPoints', 'No hay suficientes puntos para una interpretación confiable.');
     // slope approximation using simple linear regression (same as backend but quick local)
     try {
       const xs = pts.map(p => Number(p.x));
@@ -306,51 +309,75 @@ export default function AnalisisV() {
       const den = xs.reduce((acc, xv) => acc + (xv-meanX)**2, 0) || 1;
       const slope = num/den;
       const slopePerDay = slope * 86400; // because xs are epoch seconds
-      const direction = slopePerDay > 0 ? 'aumento' : (slopePerDay < 0 ? 'descenso' : 'estable');
+      const direction = slopePerDay > 0 
+        ? t('analisisV.interpret.increase', 'aumento') 
+        : (slopePerDay < 0 ? t('analisisV.interpret.decrease', 'descenso') : t('analisisV.interpret.stable', 'estable'));
       // compute avg and recent trend
       const avg = ys.reduce((a,b)=>a+b,0)/n;
       const lastY = ys[ys.length-1];
       const pct = ((lastY - avg)/avg)*100;
-      const trendText = `Tendencia: ${direction}. Cambio aproximado por día: ${Math.abs(slopePerDay).toFixed(2)} unidades. Último valor ${lastY.toFixed(2)}, promedio ${avg.toFixed(2)} (${pct.toFixed(1)}% respecto al promedio).`;
-      return trendText;
+      const trendText = t('analisisV.interpret.simpleSummary',
+       'Tendencia: {{direction}}. Cambio aproximado por día: {{slope}} unidades. Último valor {{lastY}}, promedio {{avg}} ({{pct}}% respecto al promedio).',
+       {
+         direction: direction,
+         slope: Math.abs(slopePerDay).toFixed(2),
+         lastY: lastY.toFixed(2),
+         avg: avg.toFixed(2),
+         pct: pct.toFixed(1)
+       }
+     );
+     return trendText
     } catch (e) {
-      return "No se pudo calcular la interpretación estadística.";
+      return t('analisisV.interpret.calcError', 'No se pudo calcular la interpretación estadística.');
     }
-  }, []);
+  }, [t]);
 
   const interpretMultiple = useCallback((raw) => {
-    if (!raw || !raw.ok) return "No hay información para interpretar.";
+    
+    if (!raw || !raw.ok) return t('analisisV.interpret.noInfo', 'No hay información para interpretar.');
     const coefs = raw.coef || {};
     const n = raw.n || (raw.samples && raw.samples.y && raw.samples.y.length) || 0;
-    if (!coefs || Object.keys(coefs).length === 0) return "No se detectaron coeficientes para interpretar.";
+    if (!coefs || Object.keys(coefs).length === 0) return t('analisisV.interpret.noCoefficients', 'No se detectaron coeficientes para interpretar.');
     // identify top positive and negative contributors
     const entries = Object.entries(coefs).map(([k,v]) => ({ k, v: Number(v) || 0 }));
     entries.sort((a,b) => Math.abs(b.v) - Math.abs(a.v)); // por magnitud
     const top = entries.slice(0,3);
-    const readable = top.map(t => {
-      const sign = t.v > 0 ? 'aumenta' : (t.v < 0 ? 'reduce' : 'sin efecto claro');
+    const readable = top.map(item => {
+      const sign = t.v > 0 ? t('analisisV.interpret.increases', 'aumenta') : (t.v < 0 ? t('analisisV.interpret.decreases', 'reduce') : t('analisisV.interpret.noEffect', 'sin efecto claro'));
       return `${t.k}: ${Math.abs(t.v).toFixed(3)} (${sign} el target por unidad de feature)`;
     }).join('; ');
-    const base = `Muestras usadas: ${n}. `;
-    const advice = "Interpretación: coeficientes positivos indican asociación directa con el total; coeficientes negativos indican asociación inversa. Los valores grandes en magnitud tienen mayor impacto.";
+    const base = t('analisisV.interpret.samplesUsed', 'Muestras usadas: {{n}}. ', { n });
+    const advice = t('analisisV.interpret.coefficientAdvice', 'Interpretación: coeficientes positivos indican asociación directa con el total; coeficientes negativos indican asociación inversa. Los valores grandes en magnitud tienen mayor impacto.');
     return base + readable + ". " + advice;
-  }, []);
+  }, [t]);
 
   const SimpleSummaryCard = () => (
     <div style={style.card(tema)}>
       <div style={style.headerRow(tema)}>
         <div>
-          <div style={style.title(tema)}>Regresión simple</div>
-          <div style={style.smallMuted(tema)}>Relaciona fecha (x) con total (y)</div>
+          <div style={style.title(tema)}>{t('analisisV.simple.title', 'Regresión simple')}</div>
+          <div style={style.smallMuted(tema)}>{t('analisisV.simple.subtitle', 'Relaciona fecha (x) con total (y)')}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => { setMode('simple'); }} style={style.btnGhost(tema)} title="Ver simple"><FaChartLine /></button>
-          <button onClick={() => downloadCSV((simpleResult?.mapped?.points || []).map(p => ({ x: p.x, y: p.y, y_pred: p.y_pred })), ['x','y','y_pred'])} style={style.btnGhost(tema)} title="Exportar CSV"><FaDownload /></button>
+          <button 
+            onClick={() => { setMode('simple'); }} 
+            style={style.btnGhost(tema)} 
+            title={t('analisisV.simple.viewTooltip', 'Ver simple')}
+          >
+            <FaChartLine />
+          </button>
+          <button 
+            onClick={() => downloadCSV((simpleResult?.mapped?.points || []).map(p => ({ x: p.x, y: p.y, y_pred: p.y_pred })), ['x','y','y_pred'])} 
+            style={style.btnGhost(tema)} 
+            title={t('analisisV.download.tooltip', 'Exportar CSV')}
+          >
+            <FaDownload />
+          </button>
         </div>
       </div>
 
       <div style={{ marginTop: 12 }}>
-        {loading && <div style={style.smallMuted(tema)}>Cargando datos...</div>}
+        {loading && <div style={style.smallMuted(tema)}>{t('analisisV.loading', 'Cargando datos...')}</div>}
         {!loading && simpleResult && simpleResult.mapped && (
           <>
             <div style={{ height: 360, background: '#ffffff', borderRadius: 8, padding: 8 }}>
@@ -359,15 +386,15 @@ export default function AnalisisV() {
 
             <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
               <div style={{ flex: 1 }}>
-                <strong>Puntos:</strong> {simpleResult.mapped.points.length}
+                <strong>{t('analisisV.simple.points', 'Puntos')}:</strong> {simpleResult.mapped.points.length}
               </div>
               <div style={{ flex: 1 }}>
-                <strong>Modelo:</strong> {simpleResult.raw?.mode ?? 'collection'}
+                <strong>{t('analisisV.simple.model', 'Modelo')}:</strong> {simpleResult.raw?.mode ?? 'collection'}
               </div>
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 700 }}>Resumen en lenguaje sencillo</div>
+              <div style={{ fontWeight: 700 }}>{t('analisisV.interpret.title', 'Resumen en lenguaje sencillo')}</div>
               <div style={{ marginTop: 6, ...style.smallMuted(tema) }}>
                 {interpretSimple(simpleResult.raw)}
               </div>
@@ -379,29 +406,42 @@ export default function AnalisisV() {
   );
 
   const MultipleSummaryCard = () => (
+    
     <div style={style.card(tema)}>
       <div style={style.headerRow(tema)}>
         <div>
-          <div style={style.title(tema)}>Regresión múltiple</div>
-          <div style={style.smallMuted(tema)}>Compara features con el target para estimar impacto</div>
+          <div style={style.title(tema)}>{t('analisisV.multiple.title', 'Regresión múltiple')}</div>
+          <div style={style.smallMuted(tema)}>{t('analisisV.multiple.subtitle', 'Compara features con el target para estimar impacto')}</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => { setMode('multiple'); }} style={style.btnGhost(tema)} title="Ver multiple"><FaLayerGroup /></button>
-          <button onClick={() => {
-            const X = multipleResult?.mapped?.X_matrix || [];
-            const features = multipleResult?.mapped?.features || [];
-            const rows = X.map((r, i) => {
-              const obj = { index: i, y: (multipleResult?.mapped?.y || [])[i] };
-              features.forEach((f, idx) => obj[f] = r[idx]);
-              return obj;
-            });
-            downloadCSV(rows, ['index', ...(multipleResult?.mapped?.features || []), 'y']);
-          }} style={style.btnGhost(tema)} title="Exportar CSV"><FaDownload /></button>
+          <button 
+            onClick={() => { setMode('multiple'); }} 
+            style={style.btnGhost(tema)} 
+            title={t('analisisV.multiple.viewTooltip', 'Ver multiple')}
+          >
+            <FaLayerGroup />
+          </button>
+          <button 
+            onClick={() => {
+              const X = multipleResult?.mapped?.X_matrix || [];
+              const features = multipleResult?.mapped?.features || [];
+              const rows = X.map((r, i) => {
+                const obj = { index: i, y: (multipleResult?.mapped?.y || [])[i] };
+                features.forEach((f, idx) => obj[f] = r[idx]);
+                return obj;
+              });
+              downloadCSV(rows, ['index', ...(multipleResult?.mapped?.features || []), 'y']);
+            }} 
+            style={style.btnGhost(tema)} 
+            title={t('analisisV.download.tooltip', 'Exportar CSV')}
+          >
+            <FaDownload />
+          </button>
         </div>
       </div>
 
       <div style={{ marginTop: 12 }}>
-        {loading && <div style={style.smallMuted(tema)}>Cargando datos...</div>}
+        {loading && <div style={style.smallMuted(tema)}>{t('analisisV.loading', 'Cargando datos...')}</div>}
         {!loading && multipleResult && multipleResult.mapped && (
           <>
             <div style={{ height: 320, background: '#ffffff', borderRadius: 8, padding: 8 }}>
@@ -410,29 +450,29 @@ export default function AnalisisV() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
               <div style={{ background: '#fff', padding: 8, borderRadius: 8 }}>
-                <div style={{ fontWeight: 700 }}>Features</div>
+                <div style={{ fontWeight: 700 }}>{t('analisisV.multiple.features', 'Features')}</div>
                 <div style={style.smallMuted(tema)}>{formatForDisplay(multipleResult.mapped.features)}</div>
               </div>
 
               <div style={{ background: '#fff', padding: 8, borderRadius: 8 }}>
-                <div style={{ fontWeight: 700 }}>Filas útiles</div>
+                <div style={{ fontWeight: 700 }}>{t('analisisV.multiple.usefulRows', 'Filas útiles')}</div>
                 <div style={style.smallMuted(tema)}>{multipleResult.raw?.n ?? (multipleResult.mapped?.X_matrix?.length ?? 0)}</div>
               </div>
             </div>
 
             <div style={{ marginTop: 10, display: 'flex', gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700 }}>Intercept</div>
+                <div style={{ fontWeight: 700 }}>{t('analisisV.multiple.intercept', 'Intercept')}</div>
                 <div style={style.smallMuted(tema)}>{String(multipleResult.raw?.intercept ?? multipleResult.mapped.intercept ?? '-')}</div>
               </div>
               <div style={{ flex: 2 }}>
-                <div style={{ fontWeight: 700 }}>Coeficientes (resumen)</div>
+                <div style={{ fontWeight: 700 }}>{t('analisisV.multiple.coefficients', 'Coeficientes (resumen)')}</div>
                 <pre style={{ marginTop: 6, maxHeight: 120, overflow: 'auto', background: '#fafafa', padding: 8, borderRadius: 8 }}>{formatForDisplay(multipleResult.raw?.coef ?? multipleResult.mapped.coefs ?? {})}</pre>
               </div>
             </div>
 
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontWeight: 700 }}>Resumen en lenguaje sencillo</div>
+              <div style={{ fontWeight: 700 }}>{t('analisisV.interpret.title', 'Resumen en lenguaje sencillo')}</div>
               <div style={{ marginTop: 6, ...style.smallMuted(tema) }}>
                 {interpretMultiple(multipleResult.raw)}
               </div>
@@ -447,16 +487,26 @@ export default function AnalisisV() {
     <div style={style.container}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 14 }}>
         <div>
-          <div style={style.title(tema)}>Panel de Análisis — Regresión</div>
-          <div style={style.smallMuted(tema)}>Comparativa de modelos y visualización interactiva</div>
+          <div style={style.title(tema)}>{t('analisisV.header.title', 'Panel de Análisis — Regresión')}</div>
+          <div style={style.smallMuted(tema)}>{t('analisisV.header.subtitle', 'Comparativa de modelos y visualización interactiva')}</div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => setMode('simple')} style={{ ...(mode === 'simple' ? style.btnPrimary(tema) : style.btnGhost(tema)) }}>Simple</button>
-            <button onClick={() => setMode('multiple')} style={{ ...(mode === 'multiple' ? style.btnPrimary(tema) : style.btnGhost(tema)) }}>Multiple</button>
+            <button onClick={() => setMode('simple')} style={{ ...(mode === 'simple' ? style.btnPrimary(tema) : style.btnGhost(tema)) }}>
+              {t('analisisV.modes.simple', 'Simple')}
+            </button>
+            <button onClick={() => setMode('multiple')} style={{ ...(mode === 'multiple' ? style.btnPrimary(tema) : style.btnGhost(tema)) }}>
+              {t('analisisV.modes.multiple', 'Multiple')}
+            </button>
           </div>
-          <button onClick={handleRefresh} style={style.btnGhost(tema)} title="Actualizar"><FaSync />&nbsp;Actualizar</button>
+          <button 
+            onClick={handleRefresh} 
+            style={style.btnGhost(tema)} 
+            title={t('analisisV.header.refreshTooltip', 'Actualizar')}
+          >
+            <FaSync /> {t('analisisV.header.refresh', 'Actualizar')}
+          </button>
         </div>
       </div>
 
@@ -466,14 +516,14 @@ export default function AnalisisV() {
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <FaInfoCircle style={{ color: '#2563eb' }} />
-              <div style={{ fontWeight: 700 }}>Qué estás viendo</div>
+              <div style={{ fontWeight: 700 }}>{t('analisisV.info.title', 'Qué estás viendo')}</div>
             </div>
             <div style={{ marginTop: 8, ...style.smallMuted(tema) }}>
-              <div><strong>Regresión simple:</strong> punto azul = ventas reales; línea verde = predicción del modelo. Si la línea sube con el tiempo, significa que las ventas tienden a aumentar; si baja, disminuyen.</div>
+              <div><strong>{t('analisisV.info.simple.title', 'Regresión simple:')}</strong> {t('analisisV.info.simple.description', 'punto azul = ventas reales; línea verde = predicción del modelo. Si la línea sube con el tiempo, significa que las ventas tienden a aumentar; si baja, disminuyen.')}</div>
               <div style={{ height: 6 }} />
-              <div><strong>Regresión múltiple:</strong> cada línea muestra cómo varía una característica (por ejemplo número de productos, suma de precios) a través de las muestras. La línea "Target" indica el valor real; la línea "Predicción" muestra lo que el modelo estima combinando las features.</div>
+              <div><strong>{t('analisisV.info.multiple.title', 'Regresión múltiple:')}</strong> {t('analisisV.info.multiple.description', 'cada línea muestra cómo varía una característica (por ejemplo número de productos, suma de precios) a través de las muestras. La línea "Target" indica el valor real; la línea "Predicción" muestra lo que el modelo estima combinando las features.')}</div>
               <div style={{ height: 6 }} />
-              <div><strong>Interpretación sencilla:</strong> lee el resumen en lenguaje natural abajo de cada gráfico; te dice la tendencia y las features con mayor efecto en el total.</div>
+              <div><strong>{t('analisisV.info.interpretation.title', 'Interpretación sencilla:')}</strong> {t('analisisV.info.interpretation.description', 'lee el resumen en lenguaje natural abajo de cada gráfico; te dice la tendencia y las features con mayor efecto en el total.')}</div>
             </div>
           </div>
 
@@ -482,32 +532,32 @@ export default function AnalisisV() {
 
         <div>
           <div style={style.card(tema)}>
-            <div style={{ fontWeight: 700 }}>Resumen rápido</div>
+            <div style={{ fontWeight: 700 }}>{t('analisisV.quickSummary.title', 'Resumen rápido')}</div>
             <div style={{ marginTop: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div style={style.smallMuted(tema)}>Estado</div>
-                <div>{loading ? 'Cargando...' : 'Listo'}</div>
+                <div style={style.smallMuted(tema)}>{t('analisisV.quickSummary.status', 'Estado')}</div>
+                <div>{loading ? t('analisisV.quickSummary.loading', 'Cargando...') : t('analisisV.quickSummary.ready', 'Listo')}</div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-                <div style={style.smallMuted(tema)}>Última consulta</div>
+                <div style={style.smallMuted(tema)}>{t('analisisV.quickSummary.lastQuery', 'Última consulta')}</div>
                 <div>{new Date().toLocaleString()}</div>
               </div>
 
               <hr style={{ border: 'none', height: 1, background: tema.borde, margin: '12px 0' }} />
 
-              <div style={{ fontWeight: 700 }}>Detalles técnicos</div>
+              <div style={{ fontWeight: 700 }}>{t('analisisV.technicalDetails.title', 'Detalles técnicos')}</div>
               <div style={{ marginTop: 8, fontSize: 13 }}>
-                <div><strong>Simple:</strong> {simpleResult ? `${simpleResult.mapped.points.length} puntos` : '—'}</div>
-                <div><strong>Multiple:</strong> {multipleResult ? `${multipleResult.raw?.n ?? (multipleResult.mapped?.X_matrix?.length ?? 0)} filas` : '—'}</div>
+                <div><strong>{t('analisisV.technicalDetails.simple', 'Simple:')}</strong> {simpleResult ? `${simpleResult.mapped.points.length} ${t('analisisV.technicalDetails.points', 'puntos')}` : '—'}</div>
+                <div><strong>{t('analisisV.technicalDetails.multiple', 'Multiple:')}</strong> {multipleResult ? `${multipleResult.raw?.n ?? (multipleResult.mapped?.X_matrix?.length ?? 0)} ${t('analisisV.technicalDetails.rows', 'filas')}` : '—'}</div>
               </div>
 
               <div style={{ marginTop: 12 }}>
                 <details>
-                  <summary style={{ cursor: 'pointer', color: tema.texto }}>Ver respuestas crudas</summary>
+                  <summary style={{ cursor: 'pointer', color: tema.texto }}>{t('analisisV.rawData.title', 'Ver respuestas crudas')}</summary>
                   <div style={{ marginTop: 8 }}>
-                    <div style={{ fontWeight: 700 }}>Simple (raw)</div>
+                    <div style={{ fontWeight: 700 }}>{t('analisisV.rawData.simple', 'Simple (raw)')}</div>
                     <pre style={{ maxHeight: 140, overflow: 'auto', background: '#fafafa', padding: 8 }}>{formatForDisplay(simpleResult?.raw)}</pre>
-                    <div style={{ fontWeight: 700 }}>Multiple (raw)</div>
+                    <div style={{ fontWeight: 700 }}>{t('analisisV.rawData.multiple', 'Multiple (raw)')}</div>
                     <pre style={{ maxHeight: 140, overflow: 'auto', background: '#fafafa', padding: 8 }}>{formatForDisplay(multipleResult?.raw)}</pre>
                   </div>
                 </details>
@@ -520,7 +570,7 @@ export default function AnalisisV() {
       {error && (
         <div style={{ marginTop: 14 }}>
           <div style={{ ...style.card(tema), borderLeft: '4px solid #ef4444' }}>
-            <div style={{ fontWeight: 700, color: '#b91c1c' }}>Error</div>
+            <div style={{ fontWeight: 700, color: '#b91c1c' }}>{t('analisisV.error.title', 'Error')}</div>
             <pre style={{ marginTop: 8 }}>{formatForDisplay(error)}</pre>
           </div>
         </div>

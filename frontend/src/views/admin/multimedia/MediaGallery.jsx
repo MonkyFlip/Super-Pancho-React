@@ -1,125 +1,126 @@
 import React, { useState, useEffect } from 'react';
 import { temas } from '../../../styles/temas';
+import { useTranslation } from 'react-i18next';
 
-// URL base de tu API de Flask
 const API_BASE_URL = 'http://127.0.0.1:5000';
-const PAGE_LIMIT = 12; // Cuántos items mostrar por página
+const PAGE_LIMIT = 12;
 
-// --- Definición de Estilos (como en DashboardU.jsx) ---
-// Usamos funciones que reciben el tema
 const getStyles = (tema) => ({
   container: {
-    width: '100%', // Lo hacemos 100% para que se ajuste al 'main'
-    margin: '0 auto',
+    width: '100%', 
+    margin: '0 auto', 
     fontFamily: 'Arial, sans-serif',
   },
   h3: {
-    textAlign: 'center',
-    fontSize: '1.5rem',
+    textAlign: 'center', 
+    fontSize: '1.5rem', 
     textTransform: 'capitalize',
-    color: tema.texto,
+    color: tema.texto, 
     margin: '0 0 1rem 0',
   },
   small: {
-    fontSize: '0.9rem',
-    color: '#666', // Un gris común en tu Dashboard
+    fontSize: '0.9rem', 
+    color: '#666', 
     fontWeight: 'normal',
   },
   grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '20px',
+    display: 'grid', 
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', // CORREGIDO: sin espacio extra
+    gap: '20px', 
     marginTop: '1rem',
   },
   item: {
-    border: `1px solid ${tema.borde}`,
+    border: `1px solid ${tema.borde}`, 
     borderRadius: 8,
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    overflow: 'hidden',
-    background: '#fff', // Fondo blanco como en las tablas de DashboardU
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)', 
+    overflow: 'hidden', 
+    background: '#fff',
   },
   media: {
-    width: '100%',
-    height: '250px',
+    width: '100%', 
+    height: '250px', 
     objectFit: 'cover',
-    display: 'block',
-    background: '#f0f0f0', // Un fondo mientras carga
+    display: 'block', 
+    background: '#f0f0f0',
   },
   filename: {
-    padding: '10px 12px',
-    fontSize: '0.85rem',
+    padding: '10px 12px', 
+    fontSize: '0.85rem', 
     color: '#555',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
+    whiteSpace: 'nowrap', 
+    overflow: 'hidden', 
     textOverflow: 'ellipsis',
-    margin: 0,
-    textAlign: 'center',
+    margin: 0, 
+    textAlign: 'center', 
     background: '#fcfcfc',
     borderTop: `1px solid ${tema.borde}`,
   },
   paginationControls: {
-    display: 'flex',
-    justifyContent: 'center',
+    display: 'flex', 
+    justifyContent: 'center', 
     alignItems: 'center',
-    gap: '1rem',
+    gap: '1rem', 
     margin: '1.5rem 0 1rem 0',
   },
   pageInfo: {
-    fontSize: '1rem',
-    color: tema.texto,
+    fontSize: '1rem', 
+    color: tema.texto, 
     fontWeight: 'bold',
   },
   button: {
-    padding: '8px 16px',
+    padding: '8px 16px', 
     border: `1px solid ${tema.primario}`,
-    background: tema.primario,
-    color: 'white',
+    background: tema.primario, 
+    color: 'white', 
     borderRadius: 5,
-    cursor: 'pointer',
+    cursor: 'pointer', 
     fontWeight: 'bold',
     boxShadow: `0 8px 18px ${tema.acento}22`,
   },
   buttonDisabled: {
-    padding: '8px 16px',
+    padding: '8px 16px', 
     border: `1px solid ${tema.borde}`,
-    background: tema.borde,
-    color: '#999',
+    background: tema.borde, 
+    color: '#999', 
     borderRadius: 5,
-    cursor: 'not-allowed',
+    cursor: 'not-allowed', 
     fontWeight: 'bold',
   },
   loader: {
-    textAlign: 'center',
-    fontSize: '1.2rem',
-    padding: '2rem',
+    textAlign: 'center', 
+    fontSize: '1.2rem', 
+    padding: '2rem', 
     color: '#888',
   },
   error: {
-    textAlign: 'center',
-    fontSize: '1.2rem',
-    padding: '2rem',
-    color: tema.acento, // Usamos el color 'acento' para errores
+    textAlign: 'center', 
+    fontSize: '1.2rem', 
+    padding: '2rem', 
+    color: tema.acento,
   }
 });
-// --------------------------------------------------------
-
 
 function MediaGallery({ tipo, tema }) {
-  // Si el tema no llega, usamos uno por defecto para evitar 'crashes'
-  const t = tema || temas.bosque_claro;
-  const styles = getStyles(t); // Obtenemos los estilos basados en el tema
+  const { t } = useTranslation();
+  const t_tema = tema || temas.bosque_claro;
+  const styles = getStyles(t_tema);
 
-  // --- Estados del Componente ---
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // --- Estados de Paginación ---
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  // --- Efecto para Cargar Datos ---
+  const typeKey = {
+    foto: 'photo',
+    imagen: 'image',
+    video: 'video'
+  }[tipo] || 'image';
+  
+  const translatedTypePlural = t(`media.types.${typeKey}_plural`);
+
   useEffect(() => {
     const fetchMedia = async () => {
       setIsLoading(true);
@@ -130,7 +131,7 @@ function MediaGallery({ tipo, tema }) {
       try {
         const response = await fetch(url);
         if (!response.ok) {
-          throw new Error(`Error ${response.status}: No se pudo conectar a la API`);
+          throw new Error(t('media.errors.apiConnect', `Error ${response.status}: No se pudo conectar a la API`));
         }
         
         const data = await response.json();
@@ -140,7 +141,7 @@ function MediaGallery({ tipo, tema }) {
           setTotalPages(data.pagination.total_pages);
           setTotalCount(data.pagination.total_count);
         } else {
-          throw new Error(data.error || "Error al obtener los datos");
+          throw new Error(data.error || t('media.errors.fetch', "Error al obtener los datos"));
         }
         
       } catch (err) {
@@ -152,35 +153,33 @@ function MediaGallery({ tipo, tema }) {
     };
 
     fetchMedia();
-  }, [tipo, currentPage]); // Dependencias: re-ejecutar si cambian
+  }, [tipo, currentPage, t]);
 
-  // --- Manejadores de Paginación ---
   const handleNextPage = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
-
+  
   const handlePrevPage = () => {
     setCurrentPage(prev => Math.max(prev - 1, 1));
   };
 
-  // --- Renderizado del Componente ---
-  
   if (isLoading) {
-    return <div style={styles.loader}>Cargando {tipo}s...</div>;
+    return <div style={styles.loader}>{t('media.gallery.loading', { type: translatedTypePlural })}</div>;
   }
 
   if (error) {
-    return <div style={styles.error}>Error: {error}</div>;
+    return <div style={styles.error}>{t('media.gallery.error', { error: error })}</div>;
   }
   
   if (items.length === 0) {
-    return <div style={styles.loader}>No se encontraron {tipo}s.</div>;
+    return <div style={styles.loader}>{t('media.gallery.notFound', { type: translatedTypePlural })}</div>;
   }
 
   return (
     <div style={styles.container}>
       <h3 style={styles.h3}>
-        {`Galería de ${tipo}s`} <small style={styles.small}>({totalCount} total)</small>
+        {t('media.gallery.title', { type: translatedTypePlural })} 
+        <small style={styles.small}> {t('media.gallery.total', { count: totalCount })}</small>
       </h3>
       
       <div style={styles.paginationControls}>
@@ -189,17 +188,17 @@ function MediaGallery({ tipo, tema }) {
           disabled={currentPage === 1}
           style={currentPage === 1 ? styles.buttonDisabled : styles.button}
         >
-          Anterior
+          {t('media.pagination.previous')}
         </button>
         <span style={styles.pageInfo}>
-          Página {currentPage} de {totalPages}
+          {t('media.pagination.pageInfo', { currentPage, totalPages })}
         </span>
         <button 
           onClick={handleNextPage} 
           disabled={currentPage === totalPages}
           style={currentPage === totalPages ? styles.buttonDisabled : styles.button}
         >
-          Siguiente
+          {t('media.pagination.next')}
         </button>
       </div>
       
@@ -211,7 +210,7 @@ function MediaGallery({ tipo, tema }) {
             <div key={item.id} style={styles.item}>
               {tipo === 'video' ? (
                 <video src={fileUrl} controls preload="metadata" style={styles.media}>
-                  Tu navegador no soporta videos.
+                  {t('media.video.fallback')}
                 </video>
               ) : (
                 <img src={fileUrl} alt={item.filename} loading="lazy" style={styles.media} />

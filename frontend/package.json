@@ -11,7 +11,11 @@
     "chart.js": "^4.5.1",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
+<<<<<<< HEAD
     "i18next": "^25.6.2",
+=======
+    "i18next": "^25.6.1",
+>>>>>>> c8436a71829138b449c794b2fdc8d2c5a4c91758
     "i18next-browser-languagedetector": "^8.2.0",
     "i18next-http-backend": "^3.0.2",
     "react": "^19.2.0",
@@ -28,7 +32,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "i18n:scan": "i18next-scanner"
   },
   "eslintConfig": {
     "extends": [

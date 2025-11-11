@@ -28,6 +28,7 @@ from routes import main_bp
 # --- Import del CRUDS ---
 from controllers.usuarios.routes import usuarios_bp 
 from controllers.productos.productos_controller import productos_bp
+from controllers.areas.areas_controller import areas_bp
 
 # -----------------------
 # App y configuración
@@ -60,8 +61,9 @@ app.register_blueprint(main_bp)      # <-- NUEVO: Rutas principales
 app.register_blueprint(regresion_bp)   # /regresion
 app.register_blueprint(api_bp)         # /api (explorador)
 app.register_blueprint(spark_bp, url_prefix='/api')  # /api/analisis (Spark)
-app.register_blueprint(usuarios_bp)
-app.register_blueprint(productos_bp)
+app.register_blueprint(usuarios_bp)     # /usuarios
+app.register_blueprint(productos_bp)    # /productos
+app.register_blueprint(areas_bp)    # /areas
 
 # -----------------------
 # Migración en background

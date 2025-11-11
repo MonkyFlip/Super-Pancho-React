@@ -1,0 +1,399 @@
+{
+  "welcome": "Bienvenido a mi aplicación",
+  "changeLanguage": "Cambiar Idioma",
+  "greeting": "Hola, {{name}}",
+  "nav": {
+    "adminTitle": "Administrador",
+    "expandNav": "Expandir navegación",
+    "collapseNav": "Colapsar navegación",
+    "home": "Inicio",
+    "cruds": "CRUDs",
+    "reports": "REPORTES",
+    "database": "BASE DE DATOS",
+    "multimedia": "MULTIMEDIA",
+    "logout": "Cerrar sesión"
+  },
+  "cruds": {
+    "users": "Usuarios",
+    "products": "Productos",
+    "areas": "Áreas"
+  },
+  "reports": {
+    "sales": "Reportes de Ventas",
+    "analysis": "Análisis de Ventas",
+    "generalAnalysis": "Análisis General"
+  },
+  "bd": {
+    "backups": "Backups",
+    "import": "Importar Registros"
+  },
+  "multimedia": {
+    "images": "Imágenes",
+    "photos": "Fotos",
+    "videos": "Vídeos"
+  },
+  "dashboard": {
+    "salesSummary": "Resumen ventas",
+    "last30days": "Últimos 30 días",
+    "kpi": {
+      "monthlySales": "Ventas (mes)",
+      "newClients": "Clientes nuevos"
+    },
+    "clientsActivity": "Actividad clientes",
+    "topProducts": "Top productos",
+    "alerts": "Alertas",
+    "noAlerts": "No hay alertas recientes",
+    "tasks": "Tareas",
+    "pendingTasks": "0 tareas pendientes"
+  },
+  "analysisView": {
+  "title": "Análisis de Ventas",
+  "dateRange": "Datos del {{from}} al {{to}}",
+  "generatedAt": "Análisis generado: {{date}}",
+
+  "kpis": {
+    "incomeTotal": "Ingresos Totales",
+    "salesTotal": "Total Ventas",
+    "ticketAverage": "Ticket Promedio",
+    "salesPerDay": "Ventas Prom./Día",
+    "maxSale": "Venta Máxima",
+    "minSale": "Venta Mínima"
+  },
+
+  "bestDay": {
+    "title": "Día con Más Ventas",
+    "description": "El {{date}} (con {{count}} ventas)"
+  },
+
+  "tables": {
+    "topCustomers": "Top 10 Clientes",
+    "topProducts": "Top 10 Productos",
+
+    "name": "Nombre",
+    "purchases": "Compras",
+    "totalSpent": "Gasto Total",
+
+    "unitsSold": "Unidades Vendidas",
+    "totalIncome": "Ingresos Totales"
+  },
+
+  "loading": "Cargando análisis...",
+  "error": "Error"
+},
+"analisisV": {
+    "header": {
+      "title": "Panel de Análisis — Regresión",
+      "subtitle": "Comparativa de modelos y visualización interactiva",
+      "refresh": "Actualizar",
+      "refreshTooltip": "Actualizar"
+    },
+    "simple": {
+      "title": "Regresión simple",
+      "subtitle": "Relaciona fecha (x) con total (y)",
+      "viewTooltip": "Ver simple",
+      "points": "Puntos",
+      "model": "Modelo"
+    },
+    "multiple": {
+      "title": "Regresión múltiple",
+      "subtitle": "Compara features con el target para estimar impacto",
+      "viewTooltip": "Ver multiple",
+      "features": "Features",
+      "usefulRows": "Filas útiles",
+      "intercept": "Intercept",
+      "coefficients": "Coeficientes (resumen)"
+    },
+    "download": {
+      "tooltip": "Exportar CSV",
+      "regressionPrefix": "regresion"
+    },
+    "charts": {
+      "observed": "Observado",
+      "prediction": "Predicción",
+      "target": "Target",
+      "date": "Fecha",
+      "totalSales": "Ventas totales del turno (u)",
+      "sampleIndex": "Índice de muestra",
+      "value": "Valor"
+    },
+    "interpret": {
+      "title": "Resumen en lenguaje sencillo",
+      "noInfo": "No hay información para interpretar.",
+      "notEnoughPoints": "No hay suficientes puntos para una interpretación confiable.",
+      "calcError": "No se pudo calcular la interpretación estadística.",
+      "increase": "aumento",
+      "decrease": "descenso",
+      "stable": "estable",
+      "increases": "aumenta",
+      "decreases": "reduce",
+      "noEffect": "sin efecto claro",
+      "simpleSummary": "Tendencia: {{direction}}. Cambio aproximado por día: {{slope}} unidades. Último valor {{lastY}}, promedio {{avg}} ({{pct}}% respecto al promedio).",
+      "noCoefficients": "No se detectaron coeficientes para interpretar.",
+      "samplesUsed": "Muestras usadas: {{n}}. ",
+      "coefficientAdvice": "Interpretación: coeficientes positivos indican asociación directa con el total; coeficientes negativos indican asociación inversa. Los valores grandes en magnitud tienen mayor impacto."
+    },
+    "loading": "Cargando datos...",
+    "modes": {
+      "simple": "Simple",
+      "multiple": "Multiple"
+    },
+    "info": {
+      "title": "Qué estás viendo",
+      "simple": {
+        "title": "Regresión simple:",
+        "description": "punto azul = ventas reales; línea verde = predicción del modelo. Si la línea sube con el tiempo, significa que las ventas tienden a aumentar; si baja, disminuyen."
+      },
+      "multiple": {
+        "title": "Regresión múltiple:",
+        "description": "cada línea muestra cómo varía una característica (por ejemplo número de productos, suma de precios) a través de las muestras. La línea \"Target\" indica el valor real; la línea \"Predicción\" muestra lo que el modelo estima combinando las features."
+      },
+      "interpretation": {
+        "title": "Interpretación sencilla:",
+        "description": "lee el resumen en lenguaje natural abajo de cada gráfico; te dice la tendencia y las features con mayor efecto en el total."
+      }
+    },
+    "quickSummary": {
+      "title": "Resumen rápido",
+      "status": "Estado",
+      "loading": "Cargando...",
+      "ready": "Listo",
+      "lastQuery": "Última consulta"
+    },
+    "technicalDetails": {
+      "title": "Detalles técnicos",
+      "simple": "Simple:",
+      "multiple": "Multiple:",
+      "points": "puntos",
+      "rows": "filas"
+    },
+    "rawData": {
+      "title": "Ver respuestas crudas",
+      "simple": "Simple (raw)",
+      "multiple": "Multiple (raw)"
+    },
+    "error": {
+      "title": "Error"
+    }
+  },
+  "products": {
+    "title": "Gestión de Productos",
+    "toolbar": {
+      "refreshTooltip": "Actualizar lista",
+      "refreshButton": "Actualizar",
+      "addTooltip": "Agregar producto",
+      "addButton": "Nuevo"
+    },
+    "table": {
+      "actions": {
+        "viewTooltip": "Ver detalle",
+        "editTooltip": "Editar",
+        "deleteTooltip": "Eliminar"
+      },
+      "status": {
+        "active": "Activo",
+        "inactive": "Inactivo"
+      },
+      "header": {
+        "id": "ID",
+        "name": "Nombre",
+        "price": "Precio",
+        "stock": "Stock",
+        "sku": "SKU",
+        "area": "Área",
+        "status": "Estado",
+        "actions": "Acciones"
+      },
+      "body": {
+        "loading": "Cargando...",
+        "noData": "No hay productos"
+      }
+    },
+    "summary": "Mostrando {{count}} de {{total}} productos",
+    "errors": {
+      "load": "Error al cargar productos"
+    },
+    "modal": {
+      "create": {
+        "title": "Nuevo producto",
+        "subtitle": "Registra un nuevo producto"
+      },
+      "edit": {
+        "title": "Editar producto"
+      },
+      "delete": {
+        "title": "Confirmar eliminación",
+        "description": "¿Eliminar el producto \"{{name}}\" (ID {{id}})? Esta acción no se puede deshacer."
+      }
+    },
+    "fields": {
+      "area": "Área ID",
+      "area.placeholder": "Ej. 1 o 2",
+      "name.placeholder": "Nombre del producto",
+      "price.placeholder": "Precio (ej. 34.90)",
+      "stock.placeholder": "Cantidad disponible",
+      "sku.placeholder": "Ej. SKU-5577",
+      "created_at": "Creado el"
+    }
+  },
+  "common": {
+    "name": "Nombre",
+    "close": "Cerrar",
+    "cancel": "Cancelar",
+    "create": "Crear",
+    "saving": "Guardando...",
+    "save_changes": "Guardar cambios",
+    "delete": "Eliminar",
+    "deleting": "Eliminando...",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "id": "ID",
+    "status": "Estado",
+    "actions": "Acciones",
+    "loading": "Cargando...",
+    "errors": {
+      "invalidSession": "Sesión no válida. Por favor, inicia sesión de nuevo.",
+      "sessionExpired": "Sesión expirada o no autorizada. Redirigiendo a login..."
+    }
+  },
+  "users": {
+    "user": "Usuario",
+    "dashboard": {
+      "title": "Gestionar Usuarios",
+      "refreshTooltip": "Actualizar lista",
+      "refreshButton": "Actualizar",
+      "addTooltip": "Agregar usuario",
+      "addButton": "Nuevo"
+    },
+    "table": {
+      "header": {
+        "user": "Usuario",
+        "key": "Key",
+        "role": "Rol",
+        "lastLogin": "Último login"
+      },
+      "body": {
+        "noData": "No hay usuarios"
+      },
+      "summary": "Mostrando {{count}} registros de {{total}}",
+      "summary_partial": "Mostrando {{count}} registros"
+    },
+    "table_tooltips": {
+      "view": "Ver detalle",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "modal": {
+      "create": {
+        "title": "Nuevo usuario",
+        "subtitle": "Crea un usuario con los campos del modelo"
+      },
+      "edit": {
+        "title": "Editar usuario"
+      },
+      "delete": {
+        "title": "Confirmar eliminación",
+        "description": "¿Eliminar al usuario \"{{name}}\" (ID {{id}})? Esta acción no se puede deshacer."
+      }
+    },
+    "fields": {
+      "user": "Usuario",
+      "user_placeholder": "usuario (3-64 caracteres)",
+      "password": "Password",
+      "password_placeholder": "mínimo 4 caracteres",
+      "password_edit_placeholder": "Nueva contraseña (dejar en blanco para no cambiar)",
+      "role": "Rol",
+      "role_placeholder": "Selecciona un rol",
+      "last_login": "Último login",
+      "key": "Key"
+    },
+    "roles": {
+      "admin": "administrador",
+      "worker": "trabajador",
+      "client": "cliente"
+    },
+    "errors": {
+      "load": "Error al cargar usuarios",
+      "create": "Error al crear usuario",
+      "update": "Error al actualizar usuario",
+      "delete": "Error al eliminar usuario",
+      "noUserSelected": "Usuario no seleccionado."
+    },
+    "validation": {
+      "userMin3": "Usuario: mínimo 3 caracteres",
+      "passMin4": "Password: mínimo 4 caracteres",
+      "passMin4_if_provided": "La contraseña debe tener al menos 4 caracteres si se proporciona.",
+      "invalidRole": "Rol inválido"
+    }
+  },
+  "areas": {
+    "dashboard": {
+      "title": "Gestión de Áreas",
+      "refreshTooltip": "Actualizar lista",
+      "refreshButton": "Actualizar",
+      "addTooltip": "Agregar área",
+      "addButton": "Nuevo"
+    },
+    "table": {
+      "body": {
+        "noData": "No hay áreas registradas"
+      },
+      "summary": "Mostrando {{count}} de {{total}} áreas"
+    },
+    "table_tooltips": {
+      "view": "Ver detalle",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "modal": {
+      "create": {
+        "title": "Nueva área",
+        "subtitle": "Registra una nueva área"
+      },
+      "edit": {
+        "title": "Editar área"
+      },
+      "delete": {
+        "title": "Confirmar eliminación",
+        "description": "¿Eliminar el área \"{{name}}\" (ID {{id}})? Esta acción no se puede deshacer."
+      }
+    },
+    "fields": {
+      "name_placeholder": "Ej. Lácteos"
+    },
+    "errors": {
+      "load": "Error al cargar áreas",
+      "create": "Error al crear área",
+      "update": "Error al actualizar área",
+      "delete": "Error al eliminar el área",
+      "noAreaSelected": "Área no seleccionada."
+    },
+    "validation": {
+      "nameMin2": "Nombre: mínimo 2 caracteres"
+    }
+  },
+  "media": {
+    "types": {
+      "photo": "foto",
+      "photo_plural": "fotos",
+      "image": "imagen",
+      "image_plural": "imágenes",
+      "video": "video",
+      "video_plural": "videos"
+    },
+    "gallery": {
+      "title": "Galería de {{type}}",
+      "total": "({{count}} total)",
+      "loading": "Cargando {{type}}...",
+      "error": "Error: {{error}}",
+      "notFound": "No se encontraron {{type}}."
+    },
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "pageInfo": "Página {{currentPage}} de {{totalPages}}"
+    },
+    "video": {
+      "fallback": "Tu navegador no soporta videos."
+    }
+  }
+}

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+
 
 // --- Componentes de UI ---
 
@@ -37,6 +39,7 @@ const formatNumber = (number) => {
 // --- Componente Principal ---
 
 const AnalisisView = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -60,12 +63,16 @@ const AnalisisView = () => {
   // --- Estados de Carga y Error ---
 
   if (loading) {
-    return <div className="loader-container">Cargando análisis...</div>;
+    return <div className="loader-container">{t("analysisView.loading")}</div>;
   }
 
   if (error) {
-    return <div className="error-container">Error: {error}</div>;
-  }
+  return (
+    <div className="error-container">
+      {t("analysisView.error")}: {error}
+    </div>
+  );
+}
 
   // --- Renderizado del Dashboard ---
 
@@ -247,62 +254,73 @@ const AnalisisView = () => {
       {/* --- Contenido del Dashboard --- */}
       <div className="analisis-container">
         <header className="header">
-          <h1>Análisis de Ventas</h1>
-          <div className="sub-header">
-            Datos del {rango.desde} al {rango.hasta}
-            <br />
-            Análisis generado: {new Date(fecha_analisis).toLocaleString("es-ES")}
-          </div>
-        </header>
+  <h1>{t("analysisView.title")}</h1>
+
+  <div className="sub-header">
+    {t("analysisView.dateRange", {
+      from: rango.desde,
+      to: rango.hasta,
+    })}
+    <br />
+    {t("analysisView.generatedAt", {
+      date: new Date(fecha_analisis).toLocaleString(),
+    })}
+  </div>
+</header>
 
         {/* --- KPIs Principales --- */}
         <div className="kpi-grid">
-          <StatCard
-            title="Ingresos Totales"
-            value={formatCurrency(stats.ingresos_totales)}
-          />
-          <StatCard
-            title="Total Ventas"
-            value={formatNumber(stats.total_ventas)}
-          />
-          <StatCard
-            title="Ticket Promedio"
-            value={formatCurrency(promedios.venta_promedio)}
-          />
-          <StatCard
-            title="Ventas Prom./Día"
-            value={formatNumber(promedios.ventas_por_dia.toFixed(0))}
-          />
-          <StatCard
-            title="Venta Máxima"
-            value={formatCurrency(stats.venta_maxima)}
-          />
-          <StatCard
-            title="Venta Mínima"
-            value={formatCurrency(stats.venta_minima)}
-          />
-        </div>
+  <StatCard
+    title={t("analysisView.kpis.incomeTotal")}
+    value={formatCurrency(stats.ingresos_totales)}
+  />
+  <StatCard
+    title={t("analysisView.kpis.salesTotal")}
+    value={formatNumber(stats.total_ventas)}
+  />
+  <StatCard
+    title={t("analysisView.kpis.ticketAverage")}
+    value={formatCurrency(promedios.venta_promedio)}
+  />
+  <StatCard
+    title={t("analysisView.kpis.salesPerDay")}
+    value={formatNumber(promedios.ventas_por_dia.toFixed(0))}
+  />
+  <StatCard
+    title={t("analysisView.kpis.maxSale")}
+    value={formatCurrency(stats.venta_maxima)}
+  />
+  <StatCard
+    title={t("analysisView.kpis.minSale")}
+    value={formatCurrency(stats.venta_minima)}
+  />
+</div>
+
 
         {/* --- Tarjeta Destacada: Día con Más Ventas --- */}
         <div className="kpi-grid">
-          <StatCard
-            title="Día con Más Ventas"
-            value={formatCurrency(diaMax.total_vendido)}
-            description={`El ${diaMax.fecha} (con ${formatNumber(diaMax.cantidad_ventas)} ventas)`}
-            className="highlight-card" // Nota: Para aplicar estilos especiales, necesitarías pasar className
-          />
-        </div>
+  <StatCard
+    title={t("analysisView.bestDay.title")}
+    value={formatCurrency(diaMax.total_vendido)}
+    description={t("analysisView.bestDay.description", {
+      date: diaMax.fecha,
+      count: formatNumber(diaMax.cantidad_ventas),
+    })}
+    className="highlight-card"
+  />
+</div>
+
 
         {/* --- Tablas --- */}
         <div className="tables-grid">
           <div className="table-container">
-            <h2>Top 10 Clientes</h2>
+            <h2>{t("analysisView.tables.topCustomers")}</h2>
             <table className="modern-table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Compras</th>
-                  <th>Gasto Total</th>
+                  <th>{t("analysisView.tables.name")}</th>
+                  <th>{t("analysisView.tables.purchases")}</th>
+                  <th>{t("analysisView.tables.totalSpent")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -318,13 +336,13 @@ const AnalisisView = () => {
           </div>
 
           <div className="table-container">
-            <h2>Top 10 Productos</h2>
+            <h2>{t("analysisView.tables.topProducts")}</h2>
             <table className="modern-table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Unid. Vendidas</th>
-                  <th>Ingresos Totales</th>
+                  <th>{t("analysisView.tables.name")}</th>
+                  <th>{t("analysisView.tables.unitsSold")}</th>
+                  <th>{t("analysisView.tables.totalIncome")}</th>
                 </tr>
               </thead>
               <tbody>

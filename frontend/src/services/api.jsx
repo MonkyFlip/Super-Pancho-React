@@ -156,6 +156,13 @@ export const getClientes = (params = {}) => api.get('/clientes', { params });
 export const crearCliente = (cliente) => api.post('/clientes', cliente);
 export const actualizarCliente = (id, cliente) => api.put(`/clientes/${id}`, cliente);
 export const eliminarCliente = (id) => api.delete(`/clientes/${id}`);
+/* ---------------------------
+   Áreas
+   --------------------------- */
+export const getAreas = (params = {}) => api.get('/areas', { params });
+export const crearArea = (area) => api.post('/areas', area);
+export const actualizarArea = (id, area) => api.put(`/areas/${id}`, area);
+export const eliminarArea = (id) => api.delete(`/areas/${id}`);
 
 /* ---------------------------
    Ventas
