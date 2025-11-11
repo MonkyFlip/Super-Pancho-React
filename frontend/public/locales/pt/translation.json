@@ -370,5 +370,30 @@
     "validation": {
       "nameMin2": "Nome: mínimo 2 caracteres"
     }
+  },
+  "media": {
+    "types": {
+      "photo": "foto",
+      "photo_plural": "fotos",
+      "image": "imagem",
+      "image_plural": "imagens",
+      "video": "vídeo",
+      "video_plural": "vídeos"
+    },
+    "gallery": {
+      "title": "Galeria de {{type}}",
+      "total": "({{count}} total)",
+      "loading": "Carregando {{type}}...",
+      "error": "Erro: {{error}}",
+      "notFound": "Nenhum(a) {{type}} encontrado(a)."
+    },
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Seguinte",
+      "pageInfo": "Página {{currentPage}} de {{totalPages}}"
+    },
+    "video": {
+      "fallback": "Seu navegador não suporta vídeos."
+    }
   }
 }
