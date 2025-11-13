@@ -167,10 +167,10 @@ export const eliminarArea = (id) => api.delete(`/areas/${id}`);
 /* ---------------------------
    Ventas
    --------------------------- */
-export const getVentas = (params = {}) => api.get('/ventas', { params });
-export const crearVenta = (venta) => api.post('/ventas', venta);
-export const actualizarVenta = (id, venta) => api.put(`/ventas/${id}`, venta);
-export const eliminarVenta = (id) => api.delete(`/ventas/${id}`);
+export const getVentas = (params = {}) => api.get('/api/ventas', { params });
+export const crearVenta = (venta) => api.post('/api/ventas', venta);
+export const actualizarVenta = (id, venta) => api.put(`/api/ventas/${id}`, venta);
+export const eliminarVenta = (id) => api.delete(`/api/ventas/${id}`);
 
 /* ---------------------------
    Auditoría / Actividades

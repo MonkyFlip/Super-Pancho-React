@@ -12,14 +12,33 @@ def obtener_productos():
     try:
         page = int(request.args.get("page", 1))
         limit = int(request.args.get("limit", 10))
+        
+        # --- LÓGICA DE FILTRO AÑADIDA ---
+        # 1. Lee el parámetro 'area' (que debería ser un ID)
+        area_id_str = request.args.get("area", None)
+        
+        # 2. Prepara el diccionario de filtro
+        filtro = {}
+        
+        # 3. Si se proporcionó un ID de área, úsalo
+        if area_id_str:
+            try:
+                # Tu JSON de ejemplo muestra "area_id": 1 (entero)
+                filtro["area_id"] = int(area_id_str)
+            except ValueError:
+                return jsonify({"error": "El ID del área debe ser un número entero"}), 400
+        # --- FIN DE LA LÓGICA DE FILTRO ---
 
         if page < 1 or limit < 1:
             return jsonify({"error": "page y limit deben ser mayores a 0"}), 400
 
         skip = (page - 1) * limit
 
-        productos = producto_model.get_all_paginated(skip, limit)
-        total = producto_model.count()
+        # --- CAMBIO AQUÍ ---
+        # 4. Pasa el 'filtro' a los métodos del modelo
+        productos = producto_model.get_all_paginated(skip, limit, filtro=filtro)
+        total = producto_model.count(filtro=filtro)
+        # --- FIN CAMBIO ---
 
         response = {
             "total": total,

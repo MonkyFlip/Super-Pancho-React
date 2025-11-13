@@ -17,6 +17,7 @@ from db.conexion import get_db
 from controllers.regresion_lineal import bp as regresion_bp
 from controllers.regresion_lineal.actualiza_fecha_ordinal import run_migration
 from api import bp as api_bp  # Explorador /api interactivo
+from controllers.puntoVenta.punto_venta_controller import punto_venta
 
 # --- Spark ---
 from controllers.spark.routes import api_bp as spark_bp
@@ -63,7 +64,8 @@ app.register_blueprint(api_bp)         # /api (explorador)
 app.register_blueprint(spark_bp, url_prefix='/api')  # /api/analisis (Spark)
 app.register_blueprint(usuarios_bp)     # /usuarios
 app.register_blueprint(productos_bp)    # /productos
-app.register_blueprint(areas_bp)    # /areas
+app.register_blueprint(areas_bp)   # /areas
+app.register_blueprint(punto_venta, url_prefix="/api") #/api//ventas
 
 # -----------------------
 # Migración en background
