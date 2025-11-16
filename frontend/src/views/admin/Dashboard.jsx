@@ -6,7 +6,6 @@ import { getStoredUser as getStoredUserApi } from '../../services/api';
 import { isAuthenticated, getStoredUser, getHomeRouteForUser } from '../../services/auth';
 import { useTranslation } from "react-i18next";
 
-
 // Importar dashboards de submódulos dentro de admin
 import DashboardU from './usuarios/DashboardU';
 import DashboardC from './clientes/DashboardC';
@@ -18,98 +17,272 @@ import DashboardT from './trabajadores/DashboardT';
 import ImagenesView from './multimedia/ImagenesView';
 import FotosView from './multimedia/FotosView';
 import VideosView from './multimedia/VideosView';
+
 // Reportes / Analisis
 import AnalisisV from './reportes/AnalisisV';
 import AnalisisView from './spark/AnalisisView';
 
-
 const THEME_KEY = 'app_theme_selected';
 
-const AnimatedSparkline = ({ data = [], color = '#1976d2', height = 80 }) => {
-  if (!data.length) return <div style={{ height }}>Sin datos</div>;
-  const vals = data.map(v => Number(v) || 0);
-  const max = Math.max(...vals);
-  const min = Math.min(...vals);
-  const points = vals.map((v, i) => {
-    const x = (i / Math.max(1, vals.length - 1)) * 100;
-    const y = 100 - ((v - min) / (max - min || 1)) * 100;
-    return `${x},${y}`;
-  }).join(' ');
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: '100%', height }}>
-      <defs>
-        <linearGradient id="g1" x1="0" x2="1">
-          <stop offset="0" stopColor={color} stopOpacity="0.95" />
-          <stop offset="1" stopColor={color} stopOpacity="0.6" />
-        </linearGradient>
-      </defs>
-      <polyline
-        points={points}
-        fill="none"
-        stroke="url(#g1)"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        style={{
-          strokeDasharray: 400,
-          strokeDashoffset: 400,
-          animation: 'dash 1800ms ease forwards'
-        }}
-      />
-      <style>{`
-        @keyframes dash { to { stroke-dashoffset: 0; } }
-      `}</style>
-    </svg>
-  );
-};
+// ==================== COMPONENTES MODULARES DEL DASHBOARD ====================
 
-const BarSeries = ({ data = [], color = '#ff9800', height = 72 }) => {
-  const max = Math.max(...data, 1);
-  return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'end', height }}>
-      {data.map((v, i) => {
-        const h = (v / max) * 100;
-        return (
-          <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'end' }}>
-            <div
-              style={{
-                width: '100%',
-                height: `${h}%`,
-                background: color,
-                borderRadius: 6,
-                transform: 'translateY(12px)',
-                animation: `barGrow 500ms ${i * 80}ms cubic-bezier(.2,.9,.2,1) forwards`,
-                boxShadow: `${color}33 0 6px 16px -8px`
-              }}
-            />
-          </div>
-        );
-      })}
-      <style>{`
-        @keyframes barGrow { from { transform: translateY(48px) scaleY(0.6); opacity: 0 } to { transform: translateY(0) scaleY(1); opacity: 1 } }
-      `}</style>
-    </div>
-  );
-};
-
-const KPI = ({ title, value, trend, accent }) => (
+// 1. 📊 COMPONENTES DE KPIs
+const KPI_Card = ({ title, value, subtitle, trend, trendValue, color = '#1976d2', icon }) => (
   <div style={{
-    background: '#fff', borderRadius: 12, padding: 14, boxShadow: '0 10px 30px rgba(16,24,40,0.04)', border: '1px solid rgba(0,0,0,0.04)'
+    background: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+    border: '1px solid rgba(0,0,0,0.06)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8
   }}>
-    <div style={{ fontSize: 12, color: '#666' }}>{title}</div>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-      <div style={{ fontSize: 20, fontWeight: 900 }}>{value}</div>
-      {trend && <div style={{ fontSize: 12, color: accent, fontWeight: 800 }}>{trend}</div>}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div>
+        <div style={{ fontSize: 14, color: '#64748b', fontWeight: 600 }}>{title}</div>
+        <div style={{ fontSize: 24, fontWeight: 800, color: '#1e293b' }}>{value}</div>
+        {subtitle && <div style={{ fontSize: 12, color: '#94a3b8' }}>{subtitle}</div>}
+      </div>
+      {icon && <div style={{ fontSize: 20 }}>{icon}</div>}
+    </div>
+    {trend && (
+      <div style={{
+        fontSize: 12,
+        fontWeight: 600,
+        color: trend === 'up' ? '#16a34a' : trend === 'down' ? '#dc2626' : '#64748b',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4
+      }}>
+        {trend === 'up' ? '↗' : trend === 'down' ? '↘' : '→'} {trendValue}
+      </div>
+    )}
+  </div>
+);
+
+// 2. ⚡ COMPONENTES DE GRÁFICOS
+const LineChart = ({ data, forecastData, title, height = 200 }) => {
+  const allData = [...data, ...(forecastData || [])];
+  const max = Math.max(...allData);
+  const min = Math.min(...allData);
+  const range = max - min || 1;
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 12, padding: 16, height }}>
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{title}</div>
+      
+      <div
+  style={{
+    position: 'relative',
+    height: height - 60,
+    width: '100%',
+    overflow: 'hidden',
+    minWidth: 0,
+    display: 'flex'
+  }}
+>
+        
+        <svg
+    width="100%"
+    height="100%"
+    viewBox={`0 0 100 ${height - 60}`}
+    preserveAspectRatio="none"
+    style={{ display: 'block' }} // 👈 evita expansión extra del SVG
+  >
+          {/* Línea principal */}
+          <polyline
+            points={data.map((d, i) => 
+              `${(i / (data.length - 1)) * 100},${((max - d) / range) * (height - 80)}`
+            ).join(' ')}
+            fill="none"
+            stroke="#2563eb"
+            strokeWidth="2"
+          />
+          
+          {/* Línea de pronóstico (punteada) */}
+          {forecastData && (
+            <polyline
+              points={forecastData.map((d, i) => 
+                `${((i + data.length - 1) / (data.length + forecastData.length - 2)) * 100},${((max - d) / range) * (height - 80)}`
+              ).join(' ')}
+              fill="none"
+              stroke="#94a3b8"
+              strokeWidth="2"
+              strokeDasharray="4,4"
+            />
+          )}
+        </svg>
+      </div>
+    </div>
+  );
+};
+
+const HorizontalBarChart = ({ data, title, height = 200 }) => (
+  <div style={{ background: '#fff', borderRadius: 12, padding: 16, height }}>
+    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{title}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {data.map((item, index) => (
+        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, fontSize: 12, color: '#64748b' }}>{item.label}</div>
+          <div style={{ flex: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: `${item.percentage}%`,
+              height: 20,
+              background: '#3b82f6',
+              borderRadius: 4,
+              transition: 'width 0.5s ease'
+            }} />
+            <div style={{ fontSize: 12, fontWeight: 600, minWidth: 40 }}>{item.value}</div>
+          </div>
+        </div>
+      ))}
     </div>
   </div>
 );
 
-// parseHash util
-const parseHash = () => {
-  const h = (window.location.hash || '#/').replace(/^#/, '');
-  const parts = h.split('/').filter(Boolean);
-  return parts; // ejemplo: ['admin','usuarios','DashboardU']
-};
+const PieChart = ({ data, title, height = 200 }) => (
+  <div style={{ background: '#fff', borderRadius: 12, padding: 16, height }}>
+    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>{title}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {data.map((item, index) => (
+        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 12,
+            height: 12,
+            borderRadius: '50%',
+            background: item.color
+          }} />
+          <div style={{ flex: 1, fontSize: 12 }}>{item.label}</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>{item.percentage}%</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// 3. 🚀 COMPONENTES DE WIDGETS
+const AlertWidget = ({ alerts, title = "Alertas de Inventario" }) => (
+  <div style={{ background: '#fff', borderRadius: 12, padding: 16 }}>
+    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{title}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {alerts.length === 0 ? (
+        <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: 20 }}>
+          ✅ Todo en orden
+        </div>
+      ) : (
+        alerts.map((alert, index) => (
+          <a 
+            key={index}
+            href={`#/admin/productos`}
+            style={{
+              display: 'block',
+              padding: 8,
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: 6,
+              fontSize: 12,
+              color: '#dc2626',
+              textDecoration: 'none',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => e.target.style.background = '#fecaca'}
+            onMouseOut={(e) => e.target.style.background = '#fef2f2'}
+          >
+            ⚠️ {alert}
+          </a>
+        ))
+      )}
+    </div>
+  </div>
+);
+
+const QuickActions = ({ actions }) => (
+  <div style={{ background: '#fff', borderRadius: 12, padding: 16 }}>
+    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Accesos Rápidos</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {actions.map((action, index) => (
+        <a
+          key={index}
+          href={action.href}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: 12,
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            color: '#475569',
+            textDecoration: 'none',
+            transition: 'all 0.2s'
+          }}
+          onMouseOver={(e) => e.target.style.background = '#e2e8f0'}
+          onMouseOut={(e) => e.target.style.background = '#f8fafc'}
+        >
+          {action.icon} {action.label}
+        </a>
+      ))}
+    </div>
+  </div>
+);
+
+const SparkInsight = ({ insight }) => (
+  <div style={{ 
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    borderRadius: 12,
+    padding: 16,
+    color: 'white'
+  }}>
+    <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>🔥 Insight de Spark</div>
+    <div style={{ fontSize: 14, fontWeight: 600 }}>
+      {insight || "💡 Los clientes que compran 'Producto A' los lunes tienen un 70% de probabilidad de comprar 'Producto B'."}
+    </div>
+  </div>
+);
+
+const MediaWidget = ({ media }) => (
+  <div style={{ background: '#fff', borderRadius: 12, padding: 16 }}>
+    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Recursos Multimedia</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {media.map((item, index) => (
+        <a
+          key={index}
+          href={item.href}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: 8,
+            fontSize: 12,
+            color: '#475569',
+            textDecoration: 'none'
+          }}
+        >
+          {item.type === 'video' ? '🎬' : '🖼️'} {item.title}
+        </a>
+      ))}
+    </div>
+  </div>
+);
+
+const ActivityLog = ({ activities }) => (
+  <div style={{ background: '#fff', borderRadius: 12, padding: 16 }}>
+    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Actividad Reciente</div>
+    <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {activities.map((activity, index) => (
+        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          <div style={{ color: '#94a3b8', minWidth: 40 }}>{activity.time}</div>
+          <div style={{ color: '#475569' }}>{activity.message}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ==================== DASHBOARD PRINCIPAL ====================
 
 function Dashboard() {
   const { t } = useTranslation();
@@ -121,8 +294,10 @@ function Dashboard() {
   const [allowed, setAllowed] = useState(false);
   const mountedRef = useRef(true);
 
-  // sub-route state
-  const [route, setRoute] = useState(parseHash());
+  const [route, setRoute] = useState(() => {
+    const h = (window.location.hash || '#/').replace(/^#/, '');
+    return h.split('/').filter(Boolean);
+  });
 
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
 
@@ -156,7 +331,6 @@ function Dashboard() {
 
   useEffect(() => { ensureLocalAdmin(); }, [ensureLocalAdmin]);
 
-  // react to theme changes (another tab or CambioTema)
   useEffect(() => {
     const onStorage = (e) => { if (e.key === THEME_KEY) setLocalThemeKey(e.newValue || 'bosque_claro'); };
     window.addEventListener('storage', onStorage);
@@ -169,21 +343,25 @@ function Dashboard() {
     return () => { window.removeEventListener('storage', onStorage); clearInterval(poll); };
   }, [localThemeKey]);
 
-  // listen hash changes to handle sub-routing inside admin
   useEffect(() => {
     const onHash = () => setRoute(parseHash());
     window.addEventListener('hashchange', onHash);
-    // set initial
     setRoute(parseHash());
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  // Función auxiliar para parsear hash
+  function parseHash() {
+    const h = (window.location.hash || '#/').replace(/^#/, '');
+    const parts = h.split('/').filter(Boolean);
+    return parts;
+  }
+
   if (!allowed) return null;
 
-  // Decide sub-route: route[0] is 'admin'
   const [, second, third] = route;
 
-  // CRUD dashboards
+  // Manejo de rutas de submódulos (mantener tu lógica existente)
   if (second === 'usuarios' || third === 'DashboardU') {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`, overflowX: 'hidden' }}>
@@ -282,143 +460,165 @@ function Dashboard() {
     );
   }
 
-  // Dashboard principal (default)
-  const ventas = [120, 180, 95, 220, 160, 200, 240, 180, 210, 230];
-  const clientes = [6, 9, 4, 12, 7, 10, 11, 9, 8, 13];
-  const inventario = [120, 90, 60, 40, 80, 70];
-  
-   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        width: "100%",
-        background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`,
-        overflowX: "hidden",
-      }}
-    >
+  // DATOS DE EJEMPLO PARA EL DASHBOARD
+  const kpiData = {
+    ventasHoy: { value: '$8,430', trend: 'up', trendValue: '+12%' },
+    transacciones: { value: '42', trend: 'up', trendValue: '+5%' },
+    ticketPromedio: { value: '$201', trend: 'up', trendValue: '+6%' },
+    nuevosClientes: { value: '8', trend: 'up', trendValue: '+14%' },
+    pronostico: { value: '$7,890', status: 'above' } // above o below
+  };
+
+  const ventas30Dias = [120, 180, 95, 220, 160, 200, 240, 180, 210, 230, 190, 220, 250, 280, 260, 240, 270, 290, 310, 280, 300, 320, 310, 290, 300, 320, 340, 360, 350, 330];
+  const pronostico = [340, 350, 360, 370];
+
+  const topProductos = [
+    { label: 'Laptop Gamer', value: '$2,340', percentage: 100 },
+    { label: 'Smartphone Pro', value: '$1,890', percentage: 80 },
+    { label: 'Tablet Elite', value: '$1,230', percentage: 65 },
+    { label: 'Monitor 4K', value: '$980', percentage: 52 },
+    { label: 'Teclado Mecánico', value: '$760', percentage: 45 }
+  ];
+
+  const ventasPorArea = [
+    { label: 'Electrónica', percentage: 45, color: '#3b82f6' },
+    { label: 'Abarrotes', percentage: 25, color: '#ef4444' },
+    { label: 'Hogar', percentage: 15, color: '#10b981' },
+    { label: 'Ropa', percentage: 10, color: '#f59e0b' },
+    { label: 'Otros', percentage: 5, color: '#8b5cf6' }
+  ];
+
+  const alertasInventario = [
+    "Arroz - Quedan 5 unidades",
+    "Leche - Quedan 8 unidades",
+    "Aceite - Quedan 3 unidades"
+  ];
+
+  const accionesRapidas = [
+    { icon: '➕', label: 'Agregar Producto', href: '#/admin/productos' },
+    { icon: '👤', label: 'Crear Usuario', href: '#/admin/usuarios' },
+    { icon: '📊', label: 'Ver Reporte de Ventas', href: '#/admin/reportes' },
+    { icon: '🔥', label: 'Ver Análisis de Spark', href: '#/admin/spark/analisis' }
+  ];
+
+
+  const actividadReciente = [
+    { time: '10:30', message: 'Admin agregó "Producto Nuevo"' },
+    { time: '10:25', message: 'trabajador1 inició sesión' },
+    { time: '10:15', message: 'Se generó el reporte "Ventas Mensuales"' },
+    { time: '10:00', message: 'trabajador2 cerró la venta #5043' },
+    { time: '09:45', message: 'Cliente nuevo registrado' }
+  ];
+
+  // DASHBOARD PRINCIPAL MODULAR
+  return (
+    <div style={{
+      display: 'flex',
+      minHeight: '100vh',
+      width: '100%',
+      background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`,
+      overflowX: 'hidden',
+    }}>
       <NavAdmin />
-
-      <main
-        style={{
-          flex: 1,
-          padding: 28,
-          display: "grid",
-          gridTemplateColumns: "1fr 360px",
-          gap: 20,
-          minWidth: 0,
-        }}
-      >
-        <section
-          style={{
-            background: "#fff",
-            borderRadius: 12,
-            padding: 18,
-            boxShadow: "0 10px 30px rgba(16,24,40,0.04)",
-            border: "1px solid rgba(0,0,0,0.04)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h2 style={{ margin: 0 }}>{t("dashboard.salesSummary")}</h2>
-              <div style={{ color: "#64748b", fontSize: 13 }}>
-                {t("dashboard.last30days")}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <KPI
-                title={t("dashboard.kpi.monthlySales")}
-                value="$12,430"
-                trend="+4.2%"
-                accent="#16a34a"
-              />
-              <KPI
-                title={t("dashboard.kpi.newClients")}
-                value="86"
-                trend="+3.1%"
-                accent="#0ea5e9"
-              />
-            </div>
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <AnimatedSparkline data={ventas} color="#2563eb" />
-          </div>
-
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                background: "#fff",
-                padding: 12,
-                borderRadius: 8,
-                border: "1px solid rgba(0,0,0,0.04)",
-              }}
-            >
-              <div style={{ fontSize: 13, color: "#666" }}>
-                {t("dashboard.clientsActivity")}
-              </div>
-              <BarSeries data={clientes} color="#06b6d4" />
-            </div>
-
-            <div
-              style={{
-                background: "#fff",
-                padding: 12,
-                borderRadius: 8,
-                border: "1px solid rgba(0,0,0,0.04)",
-              }}
-            >
-              <div style={{ fontSize: 13, color: "#666" }}>
-                {t("dashboard.topProducts")}
-              </div>
-              <BarSeries data={inventario} color="#f97316" />
-            </div>
-          </div>
+      
+      <main style={{
+        flex: 1,
+        padding: 24,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 24,
+        minWidth: 0
+      }}>
+        
+        {/* 1. 📊 FILA SUPERIOR: KPIs */}
+        <section style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 16
+        }}>
+          <KPI_Card 
+            title="Ventas de Hoy" 
+            value={kpiData.ventasHoy.value}
+            trend={kpiData.ventasHoy.trend}
+            trendValue={kpiData.ventasHoy.trendValue}
+            icon="💰"
+          />
+          <KPI_Card 
+            title="Total de Transacciones" 
+            value={kpiData.transacciones.value}
+            trend={kpiData.transacciones.trend}
+            trendValue={kpiData.transacciones.trendValue}
+            icon="🧾"
+          />
+          <KPI_Card 
+            title="Ticket Promedio" 
+            value={kpiData.ticketPromedio.value}
+            trend={kpiData.ticketPromedio.trend}
+            trendValue={kpiData.ticketPromedio.trendValue}
+            icon="📈"
+          />
+          <KPI_Card 
+            title="Nuevos Clientes" 
+            value={kpiData.nuevosClientes.value}
+            trend={kpiData.nuevosClientes.trend}
+            trendValue={kpiData.nuevosClientes.trendValue}
+            icon="👥"
+          />
+          <KPI_Card 
+            title="Pronóstico de Venta" 
+            value={kpiData.pronostico.value}
+            subtitle={kpiData.pronostico.status === 'above' ? 'Por encima de la predicción ✅' : 'Por debajo de la predicción ⚠️'}
+            icon="🔮"
+          />
         </section>
 
-        <aside style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 12,
-              boxShadow: "0 10px 30px rgba(16,24,40,0.04)",
-              border: "1px solid rgba(0,0,0,0.04)",
-            }}
-          >
-            <div style={{ fontSize: 13, color: "#666" }}>
-              {t("dashboard.alerts")}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 400px',
+          gap: 24,
+          alignItems: 'start'
+        }}>
+          
+          {/* 2. ⚡ COLUMNA PRINCIPAL: EL PULSO DEL NEGOCIO */}
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+            <LineChart 
+              data={ventas30Dias}
+              forecastData={pronostico}
+              title="Ventas de los Últimos 30 Días"
+              height={300}
+            />
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 20
+            }}>
+              <HorizontalBarChart 
+                data={topProductos}
+                title="Top 5 Productos Más Vendidos (Semana)"
+                height={250}
+              />
+              <PieChart 
+                data={ventasPorArea}
+                title="Ventas por Área"
+                height={250}
+              />
             </div>
-            <div style={{ marginTop: 8, color: "#475569" }}>
-              {t("dashboard.noAlerts")}
-            </div>
-          </div>
+          </section>
 
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 12,
-              boxShadow: "0 10px 30px rgba(16,24,40,0.04)",
-              border: "1px solid rgba(0,0,0,0.04)",
-            }}
-          >
-            <div style={{ fontSize: 13, color: "#666" }}>
-              {t("dashboard.tasks")}
-            </div>
-            <div style={{ marginTop: 8, color: "#475569" }}>
-              {t("dashboard.pendingTasks")}
-            </div>
-          </div>
-        </aside>
+          {/* 3. 🚀 COLUMNA SECUNDARIA: ACCIONES E INSIGHTS */}
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <AlertWidget alerts={alertasInventario} />
+            <QuickActions actions={accionesRapidas} />
+            <SparkInsight />
+          </aside>
+        </div>
+
+        {/* 4. 📋 PIE DE PÁGINA: FEEDS DE ACTIVIDAD */}
+        <section>
+          <ActivityLog activities={actividadReciente} />
+        </section>
+
       </main>
     </div>
   );

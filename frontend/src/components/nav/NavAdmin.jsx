@@ -13,7 +13,6 @@ import {
 const THEME_KEY = 'app_theme_selected';
 const COLLAPSE_KEY = 'app_nav_collapsed';
 
-
 const NavAdmin = ({ onNavigate, onLogout }) => {
   const [themeKey, setThemeKey] = useState(() => {
     try { return localStorage.getItem(THEME_KEY) || 'bosque_claro'; } catch { return 'bosque_claro'; }
@@ -231,12 +230,12 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
   // Obtener la función de traducción (t) y la instancia (i18n)
   const { t, i18n } = useTranslation();
 
-  // language change handler (ahora usa i18next)
-  const onLanguageChange = (newLang) => {
+  // language change handler (ahora usa i18next)
+  const onLanguageChange = (newLang) => {
     // Esto cambiará el idioma en toda la app y lo guardará
     // (si configuraste el languagedetector para usar localStorage)
-    i18n.changeLanguage(newLang);
-  };
+    i18n.changeLanguage(newLang);
+  };
 
   return (
     <aside style={AsideStyle} aria-label="Navegación administración">
@@ -304,76 +303,102 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
           </div>
 
           <MenuGroup
-  id="cruds"
-  icon={<FaUserCog />}
-  label={t('nav.cruds')}
-  items={[
-    { label: t('cruds.users'), path: '#/admin/usuarios/DashboardU', icon: <FaUsers /> },
-    { label: t('cruds.products'), path: '#/admin/productos/DashboardP', icon: <FaBoxOpen /> },
-    { label: t('cruds.areas'), path: '#/admin/areas/DashboardA', icon: <FaBuilding /> }
-  ]}
-/>
+            id="cruds"
+            icon={<FaUserCog />}
+            label={t('nav.cruds')}
+            items={[
+              { label: t('cruds.users'), path: '#/admin/usuarios/DashboardU', icon: <FaUsers /> },
+              { label: t('cruds.products'), path: '#/admin/productos/DashboardP', icon: <FaBoxOpen /> },
+              { label: t('cruds.areas'), path: '#/admin/areas/DashboardA', icon: <FaBuilding /> }
+            ]}
+          />
 
           <MenuGroup
-  id="reportes"
-  icon={<FaChartLine />}
-  label={t('nav.reports')}
-  items={[
-    { label: t('reports.sales'), path: '#/admin/reportes/ReportesV', icon: <FaChartLine /> },
-    { label: t('reports.analysis'), path: '#/admin/reportes/AnalisisV', icon: <FaBook /> },
-    { label: t('reports.generalAnalysis'), path: '#/admin/spark/analisis', icon: <FaBook /> }
-  ]}
-/>
+            id="reportes"
+            icon={<FaChartLine />}
+            label={t('nav.reports')}
+            items={[
+              { label: t('reports.sales'), path: '#/admin/reportes/ReportesV', icon: <FaChartLine /> },
+              { label: t('reports.analysis'), path: '#/admin/reportes/AnalisisV', icon: <FaBook /> },
+              { label: t('reports.generalAnalysis'), path: '#/admin/spark/analisis', icon: <FaBook /> }
+            ]}
+          />
 
           <MenuGroup
-            id="bd"
-            icon={<FaDatabase />}
-            label={t('nav.database')}
-            items={[
-              { label: t('bd.backups'), path: '#/admin/bd/backups', icon: <FaFileExport /> },
-              { label: t('bd.import'), path: '#/admin/bd/importar', icon: <FaFileImport /> }
-            ]}
-          />
+            id="bd"
+            icon={<FaDatabase />}
+            label={t('nav.database')}
+            items={[
+              { label: t('bd.backups'), path: '#/admin/bd/backups', icon: <FaFileExport /> },
+              { label: t('bd.import'), path: '#/admin/bd/importar', icon: <FaFileImport /> }
+            ]}
+          />
 
           <MenuGroup
-            id="multimedia"
-            icon={<FaFilm />}
-            label={t('nav.multimedia')}
-            items={[
-              { label: t('multimedia.images'), path: '#/admin/multimedia/imagenes', icon: <FaImages /> },
-              { label: t('multimedia.photos'), path: '#/admin/multimedia/fotos', icon: <FaRegImages /> },
-              { label: t('multimedia.videos'), path: '#/admin/multimedia/videos', icon: <FaVideo /> }
-            ]}
-          />
+            id="multimedia"
+            icon={<FaFilm />}
+            label={t('nav.multimedia')}
+            items={[
+              { label: t('multimedia.images'), path: '#/admin/multimedia/imagenes', icon: <FaImages /> },
+              { label: t('multimedia.photos'), path: '#/admin/multimedia/fotos', icon: <FaRegImages /> },
+              { label: t('multimedia.videos'), path: '#/admin/multimedia/videos', icon: <FaVideo /> }
+            ]}
+          />
         </nav>
       </div>
 
-      {/* Footer: CambioIdioma arriba de CambioTema y Cerrar sesión (CambioTema y Logout mantienen su posición relativa original) */}
+      {/* Footer: Los tres elementos en una fila - Tema | Idioma | Cerrar Sesión */}
       <div style={{
         marginTop: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 10,
-        alignItems: collapsed ? 'center' : 'stretch',
+        gap: 12,
+        alignItems: 'stretch',
         justifyContent: 'flex-end',
         paddingTop: 6
       }}>
-        {/* Row 1: CambioIdioma centered above the theme + logout row */}
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: collapsed ? 40 : 160 }}>
-            <CambioIdioma onChange={onLanguageChange} defaultLang={i18n.language} />
+        {/* Fila única para los tres controles */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: collapsed ? 'center' : 'space-between',
+          gap: collapsed ? 8 : 12
+        }}>
+          {/* Cambio de Tema - Izquierda */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            flex: collapsed ? 0 : 1
+          }}>
+            <CambioTema 
+              value={themeKey} 
+              onChange={(k) => { 
+                setThemeKey(k); 
+                try { localStorage.setItem(THEME_KEY, k); } catch {} 
+              }} 
+              direction="up"
+            />
           </div>
-        </div>
 
-        {/* Row 2: same horizontal layout as before: CambioTema on left (or centered when collapsed) and Logout on right */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-            <div style={{ width: collapsed ? 0 : 140, transition: 'width 180ms ease', display: collapsed ? 'none' : 'block' }}>
-              <CambioTema value={themeKey} onChange={(k) => { setThemeKey(k); try { localStorage.setItem(THEME_KEY, k); } catch {} }} />
-            </div>
+          {/* Cambio de Idioma - Centro */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center',
+            flex: collapsed ? 0 : 1
+          }}>
+            <CambioIdioma 
+              onChange={onLanguageChange} 
+              defaultLang={i18n.language}
+              compact={collapsed}
+            />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: collapsed ? 'center' : 'flex-end' }}>
+          {/* Cerrar Sesión - Derecha */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: collapsed ? 'center' : 'flex-end',
+            flex: collapsed ? 0 : 1
+          }}>
             <button
               onClick={handleLogout}
               style={{
@@ -388,7 +413,9 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
                 fontWeight: 800,
                 cursor: 'pointer',
                 boxShadow: `0 12px 28px ${tema.acento}33`,
-                transition: 'transform 140ms ease, box-shadow 140ms ease'
+                transition: 'transform 140ms ease, box-shadow 140ms ease',
+                width: collapsed ? 'auto' : '100%',
+                justifyContent: 'center'
               }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 18px 36px ${tema.acento}44`; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 12px 28px ${tema.acento}33`; }}

@@ -1,4 +1,3 @@
-// src/components/CambioIdioma.jsx
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { temas } from '../styles/temas';
 import { FaGlobe } from 'react-icons/fa';
@@ -6,25 +5,12 @@ import { FaGlobe } from 'react-icons/fa';
 const LANG_KEY = 'app_selected_language';
 const THEME_KEY = 'app_theme_selected';
 
-/**
- * CambioIdioma
- * - Botón icono (similar a CambioTema) que al hacer clic abre un menú desplegable de idiomas.
- * - Persistencia en localStorage (LANG_KEY).
- * - Actualiza document.documentElement.lang.
- * - Emite evento custom 'app:language-changed' (detail: { lang }).
- * - Observa THEME_KEY para adaptar colores al tema.
- *
- * Props:
- * - locales: [{ code, label }]  (opcional)
- * - defaultLang: 'es' (opcional)
- * - collapsed: boolean (si el nav está colapsado) -> muestra solo icono
- * - onChange: fn(newLang) callback
- */
 export default function CambioIdioma({
   locales,
   defaultLang = 'es',
   collapsed = false,
-  onChange
+  onChange,
+  direction = 'up' // Cambiado por defecto a 'down'
 }) {
   const available = Array.isArray(locales) && locales.length > 0 ? locales : [
     { code: 'es', label: 'Español' },
@@ -33,11 +19,19 @@ export default function CambioIdioma({
   ];
 
   const readStoredLang = useCallback(() => {
-    try { return localStorage.getItem(LANG_KEY) || defaultLang; } catch { return defaultLang; }
+    try {
+      return localStorage.getItem(LANG_KEY) || defaultLang;
+    } catch {
+      return defaultLang;
+    }
   }, [defaultLang]);
 
   const readThemeKey = useCallback(() => {
-    try { return localStorage.getItem(THEME_KEY) || 'bosque_claro'; } catch { return 'bosque_claro'; }
+    try {
+      return localStorage.getItem(THEME_KEY) || 'bosque_claro';
+    } catch {
+      return 'bosque_claro';
+    }
   }, []);
 
   const [lang, setLang] = useState(readStoredLang);
@@ -48,25 +42,30 @@ export default function CambioIdioma({
   const buttonRef = useRef(null);
   const menuRef = useRef(null);
 
-  // apply lang to document root
   useEffect(() => {
-    try { if (document && document.documentElement) document.documentElement.lang = lang || ''; } catch {}
+    try { 
+      if (document && document.documentElement) {
+        document.documentElement.lang = lang || '';
+      }
+    } catch {}
   }, [lang]);
 
-  // persist language & notify
   const applyLang = useCallback((newLang) => {
     try { localStorage.setItem(LANG_KEY, newLang); } catch {}
     setLang(newLang);
-    try { if (document && document.documentElement) document.documentElement.lang = newLang; } catch {}
-    try { window.dispatchEvent(new CustomEvent('app:language-changed', { detail: { lang: newLang } })); } catch {}
+    try { 
+      if (document && document.documentElement) {
+        document.documentElement.lang = newLang;
+      }
+    } catch {}
     if (typeof onChange === 'function') onChange(newLang);
   }, [onChange]);
 
-  // close menu on outside click or Esc
   useEffect(() => {
     const onDocClick = (e) => {
       if (!open) return;
-      if (menuRef.current && !menuRef.current.contains(e.target) && buttonRef.current && !buttonRef.current.contains(e.target)) {
+      if (menuRef.current && !menuRef.current.contains(e.target) && 
+          buttonRef.current && !buttonRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
@@ -74,65 +73,44 @@ export default function CambioIdioma({
       if (e.key === 'Escape') setOpen(false);
     };
     window.addEventListener('mousedown', onDocClick);
-    window.addEventListener('touchstart', onDocClick);
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('mousedown', onDocClick);
-      window.removeEventListener('touchstart', onDocClick);
       window.removeEventListener('keydown', onKey);
     };
   }, [open]);
 
-  // listen for storage changes from other tabs (theme or language)
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (!e) return;
-      if (e.key === LANG_KEY && e.newValue && e.newValue !== lang) {
-        setLang(e.newValue);
-        try { if (document && document.documentElement) document.documentElement.lang = e.newValue; } catch {}
-        if (typeof onChange === 'function') onChange(e.newValue);
-      }
-      if (e.key === THEME_KEY && e.newValue && e.newValue !== themeKey) {
-        setThemeKey(e.newValue);
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [lang, themeKey, onChange]);
-
-  // keyboard navigation: focus first item when open
-  useEffect(() => {
-    if (open && menuRef.current) {
-      const first = menuRef.current.querySelector('button[role="menuitem"]');
-      if (first) first.focus();
-    }
-  }, [open]);
-
-  // styles consistent with NavAdmin: compact, themed
+  // Estilos corregidos
   const btnStyle = {
-    width: collapsed ? 40 : 44,
-    height: 44,
+    width: 38,
+    height: 38,
     display: 'inline-grid',
     placeItems: 'center',
-    borderRadius: 10,
-    background: collapsed ? 'transparent' : tema.primario,
-    color: collapsed ? tema.texto : '#fff',
-    border: 'none',
+    borderRadius: '50%',
+    background: tema.fondo_card,
+    color: tema.texto,
+    border: `1px solid ${tema.borde}`,
     cursor: 'pointer',
-    boxShadow: collapsed ? 'none' : `0 8px 22px ${tema.acento}33`
+    fontSize: 16,
+    transition: 'all 0.2s ease',
+    '&:hover': {
+      background: tema.borde,
+      color: tema.primario,
+    }
   };
 
   const menuContainerStyle = {
     position: 'absolute',
-    right: 12,
-    bottom: 'calc(100% + 8px)',
-    minWidth: 160,
-    background: tema.fondo_card || '#fff',
+    right: 0,
+    top: direction === 'down' ? 'calc(100% + 8px)' : 'auto',
+    bottom: direction === 'up' ? 'calc(100% + 8px)' : 'auto',
+    minWidth: 140,
+    background: tema.fondo_card,
     border: `1px solid ${tema.borde}`,
-    borderRadius: 10,
-    boxShadow: tema.sombra || '0 12px 30px rgba(8,15,30,0.08)',
+    borderRadius: 8,
+    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
     padding: 8,
-    zIndex: 1200
+    zIndex: 1000
   };
 
   const menuItemStyle = {
@@ -140,34 +118,30 @@ export default function CambioIdioma({
     alignItems: 'center',
     gap: 8,
     padding: '8px 10px',
-    borderRadius: 8,
+    borderRadius: 6,
     background: 'transparent',
     border: 'none',
     width: '100%',
     textAlign: 'left',
     cursor: 'pointer',
     color: tema.texto,
-    fontWeight: 700,
-    transition: 'background 140ms ease, transform 140ms ease'
+    fontSize: 14,
+    transition: 'all 0.2s ease'
   };
 
   const selectedBadge = {
     marginLeft: 'auto',
-    fontSize: 12,
+    fontSize: 10,
     padding: '2px 6px',
-    borderRadius: 999,
+    borderRadius: 10,
     background: tema.primario,
     color: '#fff',
-    fontWeight: 800
+    fontWeight: 600
   };
 
-  // responsive placement: when collapsed, menu centered under button; when expanded, align with nav width
   const wrapperStyle = {
     position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: collapsed ? 40 : 'auto'
+    display: 'inline-block'
   };
 
   return (
@@ -192,7 +166,15 @@ export default function CambioIdioma({
           aria-label="Seleccionar idioma"
           style={menuContainerStyle}
         >
-          <div style={{ marginBottom: 6, fontWeight: 800, color: tema.texto }}>Idioma</div>
+          <div style={{ 
+            marginBottom: 8, 
+            fontWeight: 600, 
+            color: tema.texto,
+            fontSize: 13,
+            padding: '0 4px'
+          }}>
+            Idioma
+          </div>
 
           {available.map(({ code, label }) => {
             const isSel = code === lang;
@@ -202,33 +184,47 @@ export default function CambioIdioma({
                 role="menuitem"
                 tabIndex={0}
                 onClick={() => { applyLang(code); setOpen(false); }}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applyLang(code); setOpen(false); } }}
+                onKeyDown={(e) => { 
+                  if (e.key === 'Enter' || e.key === ' ') { 
+                    e.preventDefault(); 
+                    applyLang(code); 
+                    setOpen(false); 
+                  } 
+                }}
                 style={{
                   ...menuItemStyle,
-                  background: isSel ? (tema.primario + '14') : 'transparent'
+                  background: isSel ? `${tema.primario}15` : 'transparent',
+                  fontWeight: isSel ? 600 : 400
                 }}
-                title={label}
+                onMouseEnter={(e) => {
+                  if (!isSel) {
+                    e.currentTarget.style.background = `${tema.primario}08`;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSel) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
               >
-                <div style={{ width: 28, display: 'flex', justifyContent: 'center', color: tema.secundario }}>
-                  {/* simple circular initial as icon to keep visual rhythm */}
-                  <div style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 999,
-                    display: 'grid',
-                    placeItems: 'center',
-                    background: isSel ? tema.primario : 'transparent',
-                    color: isSel ? '#fff' : tema.secundario,
-                    fontSize: 12,
-                    fontWeight: 800
-                  }}>
-                    {label.charAt(0)}
-                  </div>
+                <div style={{ 
+                  width: 20, 
+                  height: 20, 
+                  borderRadius: '50%', 
+                  display: 'grid',
+                  placeItems: 'center',
+                  background: isSel ? tema.primario : 'transparent',
+                  color: isSel ? '#fff' : tema.texto,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  border: isSel ? 'none' : `1px solid ${tema.borde}`
+                }}>
+                  {label.charAt(0).toUpperCase()}
                 </div>
 
-                <div style={{ flex: 1 }}>{label}</div>
+                <span style={{ flex: 1, fontSize: 13 }}>{label}</span>
 
-                {isSel && <div style={selectedBadge}>OK</div>}
+                {isSel && <div style={selectedBadge}>✓</div>}
               </button>
             );
           })}

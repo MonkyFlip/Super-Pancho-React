@@ -180,47 +180,27 @@ const style = {
     gap: 12,
     marginBottom: 16,
   },
-  topButtons: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-  },
-  bottomControls: {
-    marginTop: 'auto',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 12,
-    paddingTop: 16,
-    borderTop: `1px solid ${temas.bosque_claro.borde}`,
-  },
-  controlsContainer: {
+  headerRightControls: {
     display: 'flex',
     alignItems: 'center',
     gap: 12,
   },
-  themeLanguageContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-  },
-  controlButton: (tema) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '10px 16px',
-    borderRadius: 10,
-    background: `linear-gradient(180deg, ${tema.primario}, ${tema.acento})`,
-    color: '#fff',
-    border: 'none',
-    fontWeight: 600,
+  iconButton: (tema) => ({
+    background: tema.fondo_card,
+    border: `1px solid ${tema.borde}`,
+    color: tema.texto,
     cursor: 'pointer',
-    boxShadow: `0 12px 28px ${tema.acento}33`,
-    transition: 'transform 140ms ease, box-shadow 140ms ease',
-    fontSize: 14,
+    borderRadius: '50%',
+    width: 38,
+    height: 38,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 16,
+    transition: 'all 0.2s ease',
     '&:hover': {
-      transform: 'translateY(-3px)',
-      boxShadow: `0 18px 36px ${tema.acento}44`,
+      background: tema.borde,
+      color: tema.primario,
     }
   }),
   userInfo: (tema) => ({
@@ -232,6 +212,11 @@ const style = {
     borderRadius: 8,
     border: `1px solid ${tema.borde}`,
   }),
+  themeLanguageContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
   leftAlignedControls: {
     display: 'flex',
     flexDirection: 'column',
@@ -435,9 +420,6 @@ export default function PuntoVenta() {
     }
   };
 
-  const mostrarResumen = () => {
-    window.location.hash = '#/resumen-ventas';
-  };
 
   const renderColumnaIzquierda = () => (
     <div style={style.card(tema)}>
@@ -568,12 +550,6 @@ export default function PuntoVenta() {
           <FaShoppingCart /> {t('actions', 'Acciones')}
         </h3>
         <div style={style.leftButtonsContainer}>
-          <button
-            style={style.leftButton(tema)}
-            onClick={mostrarResumen}
-          >
-            <FaFileAlt /> {t('dailySummary', 'Resumen Diario')}
-          </button>
           
           <button
             style={style.leftButton(tema)}
@@ -601,46 +577,54 @@ export default function PuntoVenta() {
 
   return (
     <div style={style.container}>
-      {/* Header con título */}
+      
+      {/* ===== ÁREA MODIFICADA ===== */}
       <div style={style.headerControls}>
+        {/* Lado Izquierdo: Título (sin cambios) */}
         <h2 style={style.title(tema)}>
           <FaShoppingCart /> {t('pointOfSale', 'Punto de Venta')}
         </h2>
         
-        <div style={style.userInfo(tema)}>
-          {t('user', 'Usuario')}: {getStoredUser()?.usuario || 'admin'}
+        {/* Lado Derecho: Controles de usuario y configuración */}
+        <div style={style.headerRightControls}>
+          <div style={style.userInfo(tema)}>
+            {t('user', 'Usuario')}: {getStoredUser()?.usuario || 'admin'}
+          </div>
+
+          {/* Controles de Tema e Idioma (MOVIDOS AQUÍ) */}
+          <div style={style.themeLanguageContainer}>
+            <CambioIdioma 
+              onChange={handleLanguageChange} 
+              defaultLang={i18n.language}
+              direction="down" 
+            />
+            <CambioTema 
+              value={temaKey} 
+              onChange={handleThemeChange}
+              direction="down" 
+            />
+          </div>
+          
+          {/* Botón de Logout (MOVIDO AQUÍ y re-estilizado) */}
+          <button
+            onClick={handleLogout}
+            style={style.iconButton(tema)} // <-- Nuevo estilo de ícono
+            title={t('logout', 'Cerrar sesión')}
+          >
+            <FaSignOutAlt />
+            {/* Quitamos el texto para que sea solo un ícono */}
+          </button>
         </div>
       </div>
+      {/* ===== FIN ÁREA MODIFICADA ===== */}
 
       <div style={style.grid}>
         {renderColumnaIzquierda()}
         {renderColumnaDerecha()}
       </div>
 
-      {/* Controles en la parte inferior izquierda */}
-      <div style={style.bottomControls}>
-        <div style={style.controlsContainer}>
-          <div style={style.themeLanguageContainer}>
-            <CambioIdioma 
-              onChange={handleLanguageChange} 
-              defaultLang={i18n.language}
-            />
-            <CambioTema 
-              value={temaKey} 
-              onChange={handleThemeChange}
-            />
-          </div>
-          
-          <button
-            onClick={handleLogout}
-            style={style.controlButton(tema)}
-            title={t('logout', 'Cerrar sesión')}
-          >
-            <FaSignOutAlt />
-            <span>{t('logout', 'Cerrar sesión')}</span>
-          </button>
-        </div>
-      </div>
+      {/* ===== ELIMINADO ===== */}
+      {/* Ya no necesitamos el bottomControls */}
     </div>
   );
 }
