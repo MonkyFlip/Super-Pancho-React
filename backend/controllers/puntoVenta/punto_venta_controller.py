@@ -13,15 +13,16 @@ db = get_db()
 def obtener_areas():
     try:
         areas_cursor = db["areas"].find().sort("nombre")
-        # <--- CAMBIO: Asegurarse que area_id se envía al frontend
-        # (Tu frontend ya espera el _id como string, así que esto está bien)
+        
+        # Asumiendo que _id en 'areas' puede ser un número, lo convertimos a string
+        # Si _id es ObjectId, str() también funciona. Esto es seguro.
         areas = [
             {"_id": str(a["_id"]), "nombre": a["nombre"]} 
             for a in areas_cursor
         ]
-        return jsonify({"success": True, "data": areas}) # <--- CAMBIO: Usar 'data' por consistencia
+        return jsonify({"success": True, "data": areas})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": f"Error en obtener_areas: {str(e)}"}), 500
 
 
 # ===============================
@@ -30,26 +31,32 @@ def obtener_areas():
 @punto_venta.route("/productos/<area_id>", methods=["GET"])
 def obtener_productos(area_id):
     try:
-        # <--- CAMBIO: Tu consulta original estaba bien si 'area_id' es un string
-        # Si 'area_id' en la colección 'productos' es un ObjectId, usa esto:
-        # area_obj_id = ObjectId(area_id)
-        # productos_cursor = db["productos"].find({"area_id": area_obj_id}).sort("nombre")
-        
-        # Asumiendo que 'area_id' se guarda como STRING en productos (como en tu código original)
-        productos_cursor = db["productos"].find({"area_id": area_id}).sort("nombre")
+        # --- INICIO DEL CAMBIO (area_id es un NÚMERO) ---
+        # El area_id de la URL es un string (ej: "1")
+        # Debemos convertirlo a entero (ej: 1) para buscar en la BD
+        try:
+            area_id_num = int(area_id)
+        except ValueError:
+            return jsonify({"success": False, "error": "ID de área debe ser un número"}), 400
+
+        # Buscamos en la colección 'productos' usando el NÚMERO
+        productos_cursor = db["productos"].find({"area_id": area_id_num}).sort("nombre")
+        # --- FIN DEL CAMBIO ---
         
         productos = [
             {
                 "_id": str(p["_id"]),
                 "nombre": p["nombre"],
-                "precio": p.get("precio", 0), # Usar .get() para evitar errores
-                "area_id": p.get("area_id") # <--- CAMBIO: Devolver el area_id
+                "precio": p.get("precio", 0), 
+                # Devolvemos el area_id original (string) que recibimos
+                # Esto es lo que el frontend usará
+                "area_id": area_id 
             }
             for p in productos_cursor
         ]
-        return jsonify({"success": True, "data": productos}) # <--- CAMBIO: Usar 'data'
+        return jsonify({"success": True, "data": productos})
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": f"Error en obtener_productos: {str(e)}"}), 500
 
 
 # ===============================
@@ -61,10 +68,7 @@ def registrar_venta():
         data = request.json or {}
 
         cliente_ref = data.get("cliente_ref")
-        # <--- CAMBIO CRÍTICO: 'productos' que envía el frontend
-        # Esperamos: [{"producto_id": "...", "cantidad": X, "area_id": "..."}]
         productos_in = data.get("productos", []) 
-        
         vendedor_key = data.get("vendedor_key", "admin")
         metodo_pago = data.get("metodo_pago", "efectivo")
         estado = data.get("estado", "completada")
@@ -72,35 +76,48 @@ def registrar_venta():
         if not productos_in:
             return jsonify({"success": False, "error": "Debe incluir al menos un producto"}), 400
 
-        # --- Validación de productos y cálculo de total en el SERVIDOR ---
         productos_procesados = []
         total_calculado = 0.0
 
         for item in productos_in:
-            # 1. Validar y encontrar el producto en la BD (¡Seguridad!)
-            producto_db = db["productos"].find_one({"_id": ObjectId(item["producto_id"])})
+            # 1. Validar producto (esto usa ObjectId, lo cual parece correcto para _id de producto)
+            try:
+                producto_id_obj = ObjectId(item["producto_id"])
+            except Exception:
+                 return jsonify({"success": False, "error": f"ID de producto inválido: {item['producto_id']}"}), 400
+            
+            producto_db = db["productos"].find_one({"_id": producto_id_obj})
             if not producto_db:
                 return jsonify({"success": False, "error": f"Producto no encontrado: {item['producto_id']}"}), 404
 
-            # 2. Encontrar el área para guardar el nombre (para reportes)
-            area_db = db["areas"].find_one({"_id": ObjectId(item["area_id"])})
-            area_nombre = area_db["nombre"] if area_db else "Area Desconocida"
+            # --- INICIO DEL CAMBIO (area_id es un NÚMERO) ---
+            # 2. Encontrar el área para guardar el nombre
+            # item["area_id"] es un string (ej: "1") que envió el frontend
+            try:
+                area_id_num = int(item["area_id"])
+            except Exception:
+                return jsonify({"success": False, "error": f"ID de área inválido en el item: {item['area_id']}"}), 400
 
-            # 3. Calcular subtotal en el servidor (¡Seguridad!)
+            # Asumimos que la colección 'areas' usa NÚMEROS para su _id
+            area_db = db["areas"].find_one({"_id": area_id_num})
+            area_nombre = area_db["nombre"] if area_db else "Area Desconocida"
+            # --- FIN DEL CAMBIO ---
+
+            # 3. Calcular subtotal en el servidor
             precio_real = float(producto_db.get("precio", 0))
-            cantidad = int(item.get("cantidad", 1)) # Default a 1
+            cantidad = int(item.get("cantidad", 1))
             subtotal = precio_real * cantidad
             total_calculado += subtotal
 
             # 4. Construir el objeto que SÍ se guardará en la venta
             productos_procesados.append({
-                "producto_id": ObjectId(item["producto_id"]),
+                "producto_id": producto_id_obj,
                 "nombre": producto_db["nombre"],
                 "precio": precio_real,
                 "cantidad": cantidad,
                 "subtotal": subtotal,
-                "area_id": item["area_id"], # Guardamos el string del ID de área
-                "area_nombre": area_nombre  # Guardamos el nombre para reportes
+                "area_id": item["area_id"], # Guardamos el string (ej: "1") por consistencia
+                "area_nombre": area_nombre 
             })
         # --- Fin de la validación ---
 
@@ -117,8 +134,8 @@ def registrar_venta():
 
         venta = {
             "cliente_ref": cliente_ref_obj,
-            "productos": productos_procesados, # <--- CAMBIO: Guardamos la lista procesada
-            "total": total_calculado,      # <--- CAMBIO: Usamos el total calculado en el servidor
+            "productos": productos_procesados, 
+            "total": total_calculado, 
             "vendedor_key": vendedor_key,
             "metodo_pago": metodo_pago,
             "fecha": fecha_actual.isoformat(),
@@ -135,32 +152,24 @@ def registrar_venta():
             "venta_id": str(result.inserted_id)
         })
     except Exception as e:
+        # Añadimos f-string para ver el error específico
         return jsonify({"success": False, "error": f"Error en registrar_venta: {str(e)}"}), 500
     
 # ===============================
 # GET /api/reportes/top-productos
+# (Esta ruta no necesita cambios)
 # ===============================
 @punto_venta.route("/reportes/top-productos", methods=["GET"])
 def get_top_productos():
     try:
-        # <--- NUEVO: Filtrar solo ventas 'completadas' de los últimos 7 días
-        # siete_dias_atras = datetime.utcnow() - timedelta(days=7)
-
         pipeline = [
-            # {
-            #     "$match": {
-            #         "estado": "completada",
-            #         "created_at": {"$gte": siete_dias_atras}
-            #     }
-            # },
             {
                 "$unwind": "$productos" # Desenrolla el array de productos
             },
             {
-                # <--- CAMBIO: Agrupar por nombre (o ID si prefieres)
                 "$group": {
                     "_id": "$productos.nombre", 
-                    "totalIngresos": {"$sum": "$productos.subtotal"}, # Usamos el subtotal pre-calculado
+                    "totalIngresos": {"$sum": "$productos.subtotal"},
                     "totalUnidades": {"$sum": "$productos.cantidad"}
                 }
             },
@@ -194,7 +203,7 @@ def get_top_productos():
             else:
                 item["percentage"] = 0
             
-            item["value"] = f"${item['valueRaw']:,.2f}" # Formatear como moneda
+            item["value"] = f"${item['valueRaw']:,.2f}"
 
         return jsonify({"success": True, "data": resultados})
 
@@ -203,20 +212,16 @@ def get_top_productos():
 
 # ===============================
 # NUEVA RUTA /api/reportes/ventas-por-area
+# (Esta ruta no necesita cambios)
 # ===============================
 @punto_venta.route("/reportes/ventas-por-area", methods=["GET"])
 def get_ventas_por_area():
     try:
-        # <--- NUEVO: Filtrar solo ventas 'completadas'
         pipeline = [
-            # {
-            #     "$match": {"estado": "completada"}
-            # },
             {
                 "$unwind": "$productos"
             },
             {
-                # Agrupamos por el 'area_nombre' que guardamos en la venta
                 "$group": {
                     "_id": "$productos.area_nombre", 
                     "totalVentas": {"$sum": "$productos.subtotal"}
@@ -243,7 +248,6 @@ def get_ventas_por_area():
         if not resultados:
             return jsonify({"success": True, "data": []})
 
-        # El cálculo de porcentaje se hace en el frontend para este widget
         return jsonify({"success": True, "data": resultados})
 
     except Exception as e:
@@ -251,17 +255,16 @@ def get_ventas_por_area():
 
 # ===============================
 # GET /api/ventas/resumen
+# (Esta ruta no necesita cambios)
 # ===============================
 @punto_venta.route("/ventas/resumen", methods=["GET"])
 def resumen_diario():
     try:
-        # <--- CAMBIO: Búsqueda por fecha más robusta
         hoy_inicio = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         hoy_fin = hoy_inicio + timedelta(days=1)
         
         fecha_formateada = hoy_inicio.strftime("%d/%m/%Y")
 
-        # Buscar ventas del día actual por 'created_at' (que es un objeto Date)
         ventas_hoy = list(db["ventas"].find({
             "created_at": {
                 "$gte": hoy_inicio,

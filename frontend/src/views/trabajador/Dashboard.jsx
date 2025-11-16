@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { temas } from '../../styles/temas';
 import { FaCashRegister, FaClipboardList, FaSync, FaShoppingCart, FaFileAlt, FaSignOutAlt } from 'react-icons/fa';
-import { getAreas, getProductos, crearVenta } from '../../services/api';
+import { getApiAreas, getProductosByArea, crearVenta } from '../../services/api';
 import { isAuthenticated, getStoredUser, logout } from '../../services/auth';
 import { useTranslation } from 'react-i18next';
 import CambioTema from '../../components/CambioTema';
@@ -292,7 +292,7 @@ export default function PuntoVenta() {
     setLoadingAreas(true);
     setErrorAreas(null);
     try {
-      const res = await getAreas();
+      const res = await getApiAreas();
       const areasData = res.data?.data || res.data || [];
       setAreas(areasData);
 
@@ -310,12 +310,12 @@ export default function PuntoVenta() {
   }, [areaSeleccionada]);
 
   const fetchProductos = useCallback(async (idDeArea) => {
-    if (!idDeArea) return;
-    try {
-      const res = await getProductos({ area: idDeArea });
-      const productosData = handleApiResponse(res);
-      setProductos(productosData);
-    } catch (e) {
+    if (!idDeArea) return;
+    try {
+      const res = await getProductosByArea(idDeArea);
+      const productosData = handleApiResponse(res);
+      setProductos(productosData);
+    } catch (e) {
       console.error('Error cargando productos:', e);
       setProductos([]);
     }
@@ -398,17 +398,19 @@ export default function PuntoVenta() {
     setLoading(true);
     try {
       const venta = {
-        cliente_ref: null,
-        productos: Object.values(cuenta).map((p) => ({
-          nombre: p.nombre || p.name,
-          precio: p.precio || p.price,
+        cliente_ref: null,
+        // --- CAMBIO AQUÍ ---
+        productos: Object.values(cuenta).map((p) => ({
+          producto_id: p._id,     // <-- Enviar el ID del producto
           cantidad: p.cantidad,
-        })),
-        total,
-        vendedor_key: getStoredUser()?.usuario || 'admin',
-        metodo_pago: 'efectivo',
-        estado: 'completada',
-      };
+          area_id: p.area_id      // <-- Enviar el ID del área
+        })),
+        // --- FIN DEL CAMBIO ---
+        vendedor_key: getStoredUser()?.usuario || 'admin',
+        metodo_pago: 'efectivo',
+        estado: 'completada',
+        // No es necesario enviar 'total', ya que el backend lo calcula de forma segura.
+      };
       await crearVenta(venta);
       alert('✅ Venta registrada correctamente.');
       limpiarCuenta();

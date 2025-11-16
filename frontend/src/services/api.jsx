@@ -150,6 +150,7 @@ export const eliminarUsuario = (id) => api.delete(`/usuarios/${id}`);
    Productos
    --------------------------- */
 export const getProductos = (params = {}) => api.get('/productos', { params });
+export const getProductosByArea = (areaId) => api.get(`/api/productos/${areaId}`);
 export const crearProducto = (producto) => api.post('/productos', producto);
 export const actualizarProducto = (id, producto) => api.put(`/productos/${id}`, producto);
 export const eliminarProducto = (id) => api.delete(`/productos/${id}`);
@@ -174,6 +175,7 @@ export const eliminarCliente = (id) => api.delete(`/clientes/${id}`);
    Áreas
    --------------------------- */
 export const getAreas = (params = {}) => api.get('/areas', { params });
+export const getApiAreas = (params = {}) => api.get('/api/areas', { params });
 export const crearArea = (area) => api.post('/areas', area);
 export const actualizarArea = (id, area) => api.put(`/areas/${id}`, area);
 export const eliminarArea = (id) => api.delete(`/areas/${id}`);
