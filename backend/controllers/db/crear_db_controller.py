@@ -435,9 +435,9 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any]) -> Dict[str, Any]:
         docs_a_insertar = areas_docs[:counts["areas"]]
         
         if not docs_a_insertar and counts["areas"] > 0:
-             # Si el usuario pide más áreas que las 11 de seed, creamos sintéticas
-             for i in range(len(areas_docs), counts["areas"]):
-                 docs_a_insertar.append({"_id": i + 1, "nombre": f"Area Sintetica {i+1}"})
+            # Si el usuario pide más áreas que las 11 de seed, creamos sintéticas
+            for i in range(len(areas_docs), counts["areas"]):
+                docs_a_insertar.append({"_id": i + 1, "nombre": f"Area Sintetica {i+1}"})
         
         for a in docs_a_insertar:
             areas_col.replace_one({"_id": a["_id"]}, a, upsert=True)
@@ -463,6 +463,7 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any]) -> Dict[str, Any]:
                 "stock": random.randint(1, 500),
                 "sku": p.get("sku", f"SKU-{random.randint(1000,9999)}")
             }
+            # (Corregido) El _id de area es un INT en tu seed, así que p["area_id"] es correcto
             productos_col.replace_one({"nombre": p["nombre"], "area_id": p["area_id"]}, doc, upsert=True)
         summary["productos"] += len(productos_a_insertar_seed)
     except Exception as e:
@@ -473,6 +474,7 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any]) -> Dict[str, Any]:
     if extra_products > 0:
         synthetic_products: List[Dict] = []
         try:
+            # (Corregido) Los _id de area son INTs
             areas_snapshot = list(db["areas"].find({}, {"_id": 1}))
             if not areas_snapshot:
                 areas_snapshot = [{"_id": a["_id"]} for a in _seed_areas()[:counts["areas"]]]
@@ -480,14 +482,14 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any]) -> Dict[str, Any]:
             areas_snapshot = [{"_id": a["_id"]} for a in _seed_areas()[:counts["areas"]]]
 
         if not areas_snapshot: # Fallback si no hay áreas
-             logger.warning("No se encontraron áreas para asignar a productos sintéticos.")
-             areas_snapshot = [{"_id": 1}]
+            logger.warning("No se encontraron áreas para asignar a productos sintéticos.")
+            areas_snapshot = [{"_id": 1}]
 
         for _ in range(extra_products):
             prod = {
                 "nombre": f"Producto Synthetic {random.randint(1_000_000, 9_999_999)}",
                 "precio": round(random.uniform(5, 500), 2),
-                "area_id": random.choice(areas_snapshot)["_id"],
+                "area_id": random.choice(areas_snapshot)["_id"], # Asigna un area_id (INT)
                 "sku": f"SYN-{random.randint(100000,999999)}",
                 "stock": random.randint(0, 500),
                 "activo": True,
@@ -535,34 +537,74 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any]) -> Dict[str, Any]:
         summary["usuarios"] += ins
         failed_summary["usuarios"] += fail
 
-    # Clientes
+    # --- (#!NUEVO) Creación de Lookups para Clientes y Ventas ---
+    try:
+        # 1. Snapshot de Productos (con todos los datos necesarios)
+        products_snapshot = list(db["productos"].find(
+            {"activo": True}, # Solo vender productos activos
+            {"_id": 1, "nombre": 1, "precio": 1, "area_id": 1} # Pedimos los 4 campos
+        ))
+        if not products_snapshot:
+            logger.warning("No se encontraron productos en la BD, usando seeds como fallback...")
+            # Fallback simple si 'productos' falló
+            products_snapshot = [
+                {**p, "_id": i} for i, p in enumerate(_seed_products_for_areas())
+            ]
+        
+        # 2. Lookup de Áreas (para nombre)
+        areas_snapshot = list(db["areas"].find({}, {"_id": 1, "nombre": 1}))
+        # El _id de area es un INT en tu seed, así que el lookup funciona
+        area_lookup = {a["_id"]: a["nombre"] for a in areas_snapshot} 
+        
+    except Exception as e:
+        logger.exception("Fallo al crear snapshots de productos/áreas: %s", e)
+        # Si falla, crear fallbacks para no detener todo
+        products_snapshot = [{"_id": 999, "nombre": "Fallback Prod", "precio": 10, "area_id": 1}]
+        area_lookup = {1: "Abarrotes"}
+    # --- Fin de Lookups ---
+
+
+    # Clientes (#!MODIFICADO para usar la estructura correcta)
     try:
         clientes_col = db["clientes"]
-        products_snapshot = list(db["productos"].find({}, {"nombre": 1, "precio": 1}))
-        if not products_snapshot:
-            products_snapshot = _seed_products_for_areas()
-
         clientes_needed = counts["clientes"]
         clientes_docs: List[Dict] = []
+        
         for _ in range(clientes_needed):
             num_productos = random.randint(1, 5)
             seleccion = random.choices(products_snapshot, k=num_productos)
             productos_finales = []
             total_price = 0.0
+            
             for prod in seleccion:
                 precio = float(prod.get("precio", 0))
                 cantidad = random.randint(1, 5)
                 subtotal = precio * cantidad
                 total_price += subtotal
-                productos_finales.append({"nombre": prod.get("nombre"), "precio": precio, "cantidad": cantidad})
-            fecha = _random_datetime_within_last_days(90).isoformat()
+                
+                # --- NUEVA ESTRUCTURA ---
+                area_id = prod.get("area_id")
+                area_nombre = area_lookup.get(area_id, "Area Desconocida")
+                
+                productos_finales.append({
+                    "producto_id": prod.get("_id"), # ObjectId o Int
+                    "nombre": prod.get("nombre"),
+                    "precio": precio,
+                    "cantidad": cantidad,
+                    "subtotal": subtotal,
+                    "area_id": str(area_id), # Guardar como string
+                    "area_nombre": area_nombre
+                })
+                # --- FIN NUEVA ESTRUCTURA ---
+
+            fecha_creacion = _random_datetime_within_last_days(90)
             cliente_doc = {
                 "nombre": f"Cliente {random.randint(1_000_000, 9_999_999)}",
                 "contacto": {"telefono": f"55{random.randint(10000000,99999999)}"},
-                "productos": productos_finales,
+                "productos": productos_finales, # <-- ¡Ahora con estructura completa!
                 "total": round(total_price, 2),
-                "fecha": fecha,
-                "created_at": datetime.now(timezone.utc)
+                "fecha": fecha_creacion.isoformat(),
+                "created_at": fecha_creacion
             }
             clientes_docs.append(cliente_doc)
 
@@ -574,37 +616,56 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any]) -> Dict[str, Any]:
         logger.exception("Fallo al poblar clientes: %s", e)
         failed_summary["clientes"] += counts.get("clientes", 0)
 
-    # Ventas
+    # Ventas (#!MODIFICADO para usar la estructura correcta)
     try:
         ventas_col = db["ventas"]
         ventas_needed = counts["ventas"]
         ventas_docs: List[Dict] = []
-        # intentar tomar clientes ya creados para relaciones
+        
         try:
             sample_client_ids = [d["_id"] for d in db["clientes"].find({}, {"_id": 1}).limit(1000)]
         except Exception:
             sample_client_ids = []
 
-        # (Usamos products_snapshot de la sección 'Clientes' que ya está en memoria)
+        # (Usamos products_snapshot y area_lookup de la sección anterior)
 
         for i in range(ventas_needed):
             seleccion = random.choices(products_snapshot, k=random.randint(1, 5))
             productos_finales = []
             total_price = 0.0
+            
             for prod in seleccion:
                 precio = float(prod.get("precio", 0))
                 cantidad = random.randint(1, 5)
                 subtotal = precio * cantidad
                 total_price += subtotal
-                productos_finales.append({"nombre": prod.get("nombre"), "precio": precio, "cantidad": cantidad})
+                
+                # --- NUEVA ESTRUCTURA (igual que en Clientes) ---
+                area_id = prod.get("area_id")
+                area_nombre = area_lookup.get(area_id, "Area Desconocida")
+                
+                productos_finales.append({
+                    "producto_id": prod.get("_id"),
+                    "nombre": prod.get("nombre"),
+                    "precio": precio,
+                    "cantidad": cantidad,
+                    "subtotal": subtotal,
+                    "area_id": str(area_id),
+                    "area_nombre": area_nombre
+                })
+                # --- FIN NUEVA ESTRUCTURA ---
+            
+            # (#!NUEVO) Fechas consistentes
+            fecha_venta = _random_datetime_within_last_days(90)
+
             venta = {
                 "cliente_ref": random.choice(sample_client_ids) if sample_client_ids else None,
-                "productos": productos_finales,
+                "productos": productos_finales, # <-- ¡Ahora con estructura completa!
                 "total": round(total_price, 2),
-                "vendedor_key": random.choice(["admin", "trabajador1", "cliente1"]), # (Usamos los seeds)
+                "vendedor_key": random.choice(["admin", "trabajador1"]),
                 "metodo_pago": random.choice(["efectivo", "tarjeta", "transferencia"]),
-                "fecha": _random_datetime_within_last_days(90).isoformat(),
-                "created_at": datetime.now(timezone.utc),
+                "fecha": fecha_venta.isoformat(), # <-- Fecha aleatoria
+                "created_at": fecha_venta,        # <-- Misma fecha aleatoria (como objeto Date)
                 "estado": random.choice(["completada", "anulada"])
             }
             ventas_docs.append(venta)

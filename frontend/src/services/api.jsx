@@ -109,7 +109,12 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
+export const getTopProductos = () => {
+  return api.get('/api/reportes/top-productos');
+};
+export const getReporteVentasPorArea = () => {
+  return api.get('/api/reportes/ventas-por-area');
+};
 /* ---------------------------
    Auth endpoints
    --------------------------- */
@@ -148,6 +153,15 @@ export const getProductos = (params = {}) => api.get('/productos', { params });
 export const crearProducto = (producto) => api.post('/productos', producto);
 export const actualizarProducto = (id, producto) => api.put(`/productos/${id}`, producto);
 export const eliminarProducto = (id) => api.delete(`/productos/${id}`);
+
+/* ---------------------------
+   Dashboard Widgets
+   --------------------------- */
+export const getAlertasInventario = (params = {}) => api.get('/dashboard/alertas-inventario', { params });
+export const getProductosMasVendidos = (params = {}) => api.get('/dashboard/productos-mas-vendidos', { params });
+export const getVentasPorArea = (params = {}) => api.get('/dashboard/ventas-por-area', { params });
+export const getKPIs = (params = {}) => api.get('/dashboard/kpis', { params });
+export const getVentas30Dias = (params = {}) => api.get('/dashboard/ventas-30-dias', { params });
 
 /* ---------------------------
    Clientes
