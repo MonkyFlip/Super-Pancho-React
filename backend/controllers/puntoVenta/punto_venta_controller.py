@@ -253,57 +253,56 @@ def get_ventas_por_area():
     except Exception as e:
         return jsonify({"success": False, "error": f"Error en ventas-por-area: {str(e)}"}), 500
 
-# ===============================
-# GET /api/ventas/resumen
-# (Esta ruta no necesita cambios)
-# ===============================
-@punto_venta.route("/ventas/resumen", methods=["GET"])
-def resumen_diario():
+
+# GET /api/ventas/resumen-30-dias
+@punto_venta.route("/ventas/resumen-30-dias", methods=["GET"])
+def resumen_grafica_30_dias():
     try:
-        hoy_inicio = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        hoy_fin = hoy_inicio + timedelta(days=1)
-        
-        fecha_formateada = hoy_inicio.strftime("%d/%m/%Y")
+        # 1. Definimos el rango de tiempo
+        hoy = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        fecha_fin = hoy + timedelta(days=1)      # Mañana a las 00:00
+        fecha_inicio = hoy - timedelta(days=30)  # Hace 30 días
 
-        ventas_hoy = list(db["ventas"].find({
-            "created_at": {
-                "$gte": hoy_inicio,
-                "$lt": hoy_fin
+        # 2. Creamos el pipeline de agregación
+        pipeline = [
+            # Etapa 1: Filtrar solo las ventas de los últimos 30 días
+            {
+                "$match": {
+                    "created_at": {
+                        "$gte": fecha_inicio,
+                        "$lt": fecha_fin
+                    }
+                }
+            },
+            # Etapa 2: Agrupar por día y sumar el total
+            {
+                "$group": {
+                    "_id": { 
+                        "$dateToString": { "format": "%Y-%m-%d", "date": "$created_at" } 
+                    },
+                    "total": { "$sum": "$total" }
+                }
+            },
+            # Etapa 3: Ordenar por fecha (ascendente)
+            {
+                "$sort": { "_id": 1 }
+            },
+            # Etapa 4: Dar el formato final (renombrar _id a fecha)
+            {
+                "$project": {
+                    "_id": 0,             # Ocultar el _id original
+                    "fecha": "$_id",      # Asignar el valor de _id a "fecha"
+                    "total": 1            # Mostrar el total
+                }
             }
-        }))
+        ]
 
-        if not ventas_hoy:
-            return jsonify({
-                "success": True,
-                "mensaje": f"No hay ventas registradas el {fecha_formateada}",
-                "resumen": {
-                    "fecha": fecha_formateada,
-                    "total_vendido": 0,
-                    "cantidad_ventas": 0,
-                    "ventas": []
-                }
-            })
+        # Ejecutamos la consulta
+        resultados = list(db["ventas"].aggregate(pipeline))
 
-        total_diario = sum(v["total"] for v in ventas_hoy)
-        cantidad_ventas = len(ventas_hoy)
+        # Retornamos la lista directa como pediste
+        return jsonify(resultados)
 
-        resumen = {
-            "fecha": fecha_formateada,
-            "total_vendido": total_diario,
-            "cantidad_ventas": cantidad_ventas,
-            "ventas": [
-                {
-                    "_id": str(v["_id"]),
-                    "total": v["total"],
-                    "vendedor": v.get("vendedor_key", "N/A"),
-                    "metodo_pago": v.get("metodo_pago", "N/A"),
-                    "estado": v.get("estado", "N/A"),
-                    "fecha": v["fecha"]
-                }
-                for v in ventas_hoy
-            ]
-        }
-
-        return jsonify({"success": True, "resumen": resumen})
     except Exception as e:
-        return jsonify({"success": False, "error": f"Error en resumen_diario: {str(e)}"}), 500
+        print(f"Error: {e}")
+        return jsonify({"error": "Error al procesar la gráfica"}), 500

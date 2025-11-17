@@ -187,6 +187,7 @@ export const getVentas = (params = {}) => api.get('/api/ventas', { params });
 export const crearVenta = (venta) => api.post('/api/ventas', venta);
 export const actualizarVenta = (id, venta) => api.put(`/api/ventas/${id}`, venta);
 export const eliminarVenta = (id) => api.delete(`/api/ventas/${id}`);
+export const resumen30dias = (params = {}) => api.get('/api/ventas/resumen-30-dias', { params })
 
 /* ---------------------------
    Auditoría / Actividades

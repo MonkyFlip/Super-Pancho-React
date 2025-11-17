@@ -25,9 +25,12 @@ import AnalisisView from './spark/AnalisisView';
 // Servicios API
 import { getProductos, getAreas, getVentas } from '../../services/api';
 
+// widgets
 import AlertasInventarioWidget from '../../components/widgets/AlertasInventarioWidget';
 import ProductosMasVendidosWidget from '../../components/widgets/ProductosMasVendidosWidget';
 import VentasPorAreaWidget from '../../components/widgets/VentasPorAreaWidget';
+import Ventas30DiasWidget from '../../components/widgets/Ventas30DiasWidget';
+
 
 const THEME_KEY = 'app_theme_selected';
 
@@ -264,19 +267,6 @@ const QuickActions = ({ actions }) => (
   </div>
 );
 
-const SparkInsight = ({ insight }) => (
-  <div style={{ 
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    borderRadius: 12,
-    padding: 16,
-    color: 'white'
-  }}>
-    <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>🔥 Insight de Spark</div>
-    <div style={{ fontSize: 14, fontWeight: 600 }}>
-      {insight || "💡 Los clientes que compran 'Producto A' los lunes tienen un 70% de probabilidad de comprar 'Producto B'."}
-    </div>
-  </div>
-);
 
 const ActivityLog = ({ activities }) => (
   <div style={{ background: '#fff', borderRadius: 12, padding: 16 }}>
@@ -574,12 +564,7 @@ function Dashboard() {
           
           {/* 2. ⚡ COLUMNA PRINCIPAL: EL PULSO DEL NEGOCIO */}
           <section style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
-            <LineChart 
-              data={ventas30Dias}
-              forecastData={pronostico}
-              title="Ventas de los Últimos 30 Días"
-              height={300}
-            />
+            <Ventas30DiasWidget />
             
             <div style={{
               display: 'grid',
@@ -601,7 +586,7 @@ function Dashboard() {
           <aside style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <AlertasInventarioWidget title="Alertas de Inventario" />
             <QuickActions actions={accionesRapidas} />
-            <SparkInsight />
+
             <ActivityLog activities={actividadReciente} />
           </aside>
         </div>

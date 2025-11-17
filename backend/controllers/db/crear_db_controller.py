@@ -656,7 +656,7 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any]) -> Dict[str, Any]:
                 # --- FIN NUEVA ESTRUCTURA ---
             
             # (#!NUEVO) Fechas consistentes
-            fecha_venta = _random_datetime_within_last_days(90)
+            fecha_venta = _random_datetime_within_last_days(200_000)
 
             venta = {
                 "cliente_ref": random.choice(sample_client_ids) if sample_client_ids else None,
