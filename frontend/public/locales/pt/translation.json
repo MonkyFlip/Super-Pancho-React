@@ -1,6 +1,8 @@
 {
   "welcome": "Bem-vindo à minha aplicação",
   "productss": "Produtos",
+  "searchProduct": "buscando productos...",
+  "noSearchResults": "No hay productos",
   "selectArea": "Selecionar área:",
   "loadingAreas": "Carregando áreas...",
   "errorLoadingAreas": "Erro ao carregar áreas",
