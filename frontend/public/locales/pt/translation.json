@@ -4,6 +4,11 @@
   "searchProduct": "buscando productos...",
   "noSearchResults": "No hay productos",
   "selectArea": "Selecionar área:",
+  "alertInsufficientStock": "Estoque insuficiente para",
+  "alertNoStock": "Não há estoque suficiente de",
+  "availableStock": "Estoque disponível",
+  "outOfStock": "Sem estoque",
+  "stock": "Estoque",
   "loadingAreas": "Carregando áreas...",
   "errorLoadingAreas": "Erro ao carregar áreas",
   "noAreasAvailable": "Nenhuma área disponível",
@@ -273,6 +278,7 @@
     "active": "Ativo",
     "inactive": "Inativo",
     "id": "ID",
+    "product": "Produto",
     "status": "Status",
     "actions": "Ações",
     "loading": "Carregando...",
@@ -420,6 +426,64 @@
     },
     "video": {
       "fallback": "Seu navegador não suporta vídeos."
+    }
+  },
+   "dashboardT": {
+    "quickActions": {
+      "title": "Acesso Rápido"
+    },
+    "kpi": {
+      "salesToday": "Vendas de Hoje",
+      "totalTransactions": "Total de Transações",
+      "averageTicket": "Ticket Médio",
+      "newClients": "Novos Clientes",
+      "totalProducts": "Total de Produtos",
+      "today": "Hoje",
+      "average": "Média",
+      "inventory": "Inventário",
+      "transactions": "Transações",
+      "registeredToday": "Registrados hoje"
+    },
+    "salesByArea": "Vendas por Área",
+    "sparkAnalysis": "Análise Spark",
+    "manageInventory": "Gerenciar Inventário"
+  },
+  "widgets": {
+    "inventoryAlerts": {
+      "title": "Alertas de Inventário",
+      "lowStockMessage": "{{product}} - Estoque baixo: {{stock}} unidades",
+      "allGood": "Tudo em ordem",
+      "sampleMessages": {
+        "laptop": "Laptop Gamer - Estoque baixo: 8 unidades",
+        "mouse": "Mouse Sem Fio - Estoque baixo: 3 unidades",
+        "keyboard": "Teclado Mecânico - Estoque baixo: 5 unidades"
+      }
+    },
+    "topProducts": {
+      "title": "Produtos Mais Vendidos (Semana)",
+      "loading": "Carregando produtos...",
+      "sampleProducts": {
+        "laptop": "Laptop Gamer",
+        "smartphone": "Smartphone Pro",
+        "tablet": "Tablet Elite",
+        "monitor": "Monitor 4K",
+        "keyboard": "Teclado Mecânico"
+      }
+    },
+    "sales30Days": {
+      "title": "Vendas Últimos 30 Dias",
+      "average": "Média",
+      "noData": "Sem dados"
+    },
+    "salesByArea": {
+      "title": "Vendas por Área",
+      "loading": "Carregando vendas...",
+      "sampleAreas": {
+        "electronics": "Eletrônicos",
+        "groceries": "Mercearia",
+        "home": "Casa",
+        "clothing": "Roupas"
+      }
     }
   }
 }

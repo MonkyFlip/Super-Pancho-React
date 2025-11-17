@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { temas } from '../../styles/temas';
 import { FaCashRegister, FaClipboardList, FaSync, FaShoppingCart, FaSignOutAlt, FaSearch, FaTrash } from 'react-icons/fa';
-import { getApiAreas, getProductosByArea, crearVenta } from '../../services/api';
+import { getApiAreas, getProductosByArea, crearVenta, actualizarProducto } from '../../services/api';
 import { isAuthenticated, getStoredUser, logout } from '../../services/auth';
 import { useTranslation } from 'react-i18next';
 import CambioTema from '../../components/CambioTema';
@@ -98,17 +98,18 @@ const style = {
     border: `1px solid ${tema.borde}`,
     background: tema.fondo,
   }),
-  listItem: (tema, selected = false) => ({
+  listItem: (tema, selected = false, disabled = false) => ({
     padding: '12px',
     borderBottom: `1px solid ${tema.borde}`,
-    cursor: 'pointer',
+    cursor: disabled ? 'not-allowed' : 'pointer',
     color: tema.texto,
     background: selected ? tema.primario + '20' : 'transparent',
     borderLeft: selected ? `4px solid ${tema.primario}` : '4px solid transparent',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    '&:hover': { background: tema.primario + '10' }
+    opacity: disabled ? 0.6 : 1,
+    '&:hover': disabled ? {} : { background: tema.primario + '10' }
   }),
   cuentaListContainer: (tema) => ({
     flex: 1, 
@@ -165,7 +166,7 @@ const style = {
       gap: 8,
       opacity: disabled ? 0.6 : 1,
       transition: 'transform 0.1s',
-      '&:active': { transform: 'scale(0.98)' }
+      '&:active': disabled ? {} : { transform: 'scale(0.98)' }
     }
   },
   removeBtn: (tema) => ({
@@ -201,6 +202,18 @@ const style = {
     padding: '2px 8px',
     fontSize: 12,
     fontWeight: 'bold'
+  }),
+  stockWarning: (tema) => ({
+    color: tema.peligro,
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginLeft: 8
+  }),
+  stockInfo: (tema) => ({
+    color: tema.texto,
+    opacity: 0.6,
+    fontSize: 11,
+    marginLeft: 8
   })
 };
 
@@ -258,10 +271,21 @@ export default function PuntoVenta() {
   useEffect(() => { if (areaSeleccionada) fetchProductos(areaSeleccionada); }, [areaSeleccionada, fetchProductos]);
 
   const agregarProducto = (p) => {
+    const stockDisponible = p.stock || 0;
+    const cantidadEnCuenta = cuenta[p._id]?.cantidad || 0;
+    
+    if (cantidadEnCuenta >= stockDisponible) {
+      alert(`${t('alertNoStock', 'No hay suficiente stock de')} ${p.nombre}. ${t('availableStock', 'Stock disponible')}: ${stockDisponible}`);
+      return;
+    }
+    
     const nueva = { ...cuenta };
     const id = p._id;
-    if (nueva[id]) nueva[id].cantidad++;
-    else nueva[id] = { ...p, cantidad: 1 };
+    if (nueva[id]) {
+      nueva[id].cantidad++;
+    } else {
+      nueva[id] = { ...p, cantidad: 1 };
+    }
     setCuenta(nueva);
     recalcularTotal(nueva);
   };
@@ -292,20 +316,64 @@ export default function PuntoVenta() {
     if (!Object.keys(cuenta).length) return;
     setLoading(true);
     try {
+      const productosConStockActualizado = Object.values(cuenta).map(p => {
+        const nuevoStock = (p.stock || 0) - p.cantidad;
+        return {
+          producto_id: p._id,
+          cantidad: p.cantidad,
+          area_id: p.area_id,
+          nuevo_stock: Math.max(0, nuevoStock)
+        };
+      });
+
+      const productosSinStock = productosConStockActualizado.filter(p => p.nuevo_stock < 0);
+      if (productosSinStock.length > 0) {
+        const nombresSinStock = productosSinStock.map(p => {
+          const producto = cuenta[p.producto_id];
+          return producto?.nombre || 'Producto desconocido';
+        }).join(', ');
+        
+        alert(`${t('alertInsufficientStock', 'Stock insuficiente para')}: ${nombresSinStock}`);
+        return;
+      }
+
       await crearVenta({
         cliente_ref: null,
-        productos: Object.values(cuenta).map(p => ({ producto_id: p._id, cantidad: p.cantidad, area_id: p.area_id })),
+        productos: productosConStockActualizado.map(p => ({
+          producto_id: p.producto_id,
+          cantidad: p.cantidad,
+          area_id: p.area_id
+        })),
         vendedor_key: getStoredUser()?.usuario || 'admin',
         metodo_pago: 'efectivo',
         estado: 'completada',
       });
-      // Usando claves del JSON
-      alert(t('alertSaleSuccess', 'Venta registrada'));
-      setCuenta({}); setTotal(0);
+
+      for (const item of productosConStockActualizado) {
+        try {
+          await actualizarProducto(item.producto_id, {
+            stock: item.nuevo_stock
+          });
+        } catch (error) {
+          console.error(`Error actualizando stock para producto ${item.producto_id}:`, error);
+        }
+      }
+
+      alert(t('alertSaleSuccess', 'Venta registrada y stock actualizado'));
+      setCuenta({}); 
+      setTotal(0);
+      
+      if (areaSeleccionada) {
+        fetchProductos(areaSeleccionada);
+      }
+      
     } catch (e) { 
-      alert(t('alertSaleError', 'Error al registrar')); 
+      console.error('Error en la venta:', e);
+      alert(t('alertSaleError', 'Error al registrar la venta')); 
     } 
-    finally { setLoading(false); }
+    finally { 
+      setLoading(false); 
+    }
   };
 
   const productosFiltrados = productos.filter(p => 
@@ -314,11 +382,10 @@ export default function PuntoVenta() {
 
   const renderCatalogo = () => (
     <div style={style.card(tema)}>
-      {/* Corregido: 'productss' es la clave en tu JSON */}
       <h3 style={style.title(tema)}><FaClipboardList /> {t('productss', 'Productos')}</h3>
       
       <select style={style.select(tema)} value={areaSeleccionada} onChange={e => setAreaSeleccionada(e.target.value)}>
-        {loadingAreas ? <option>{t('loadingAreas', 'Cargando...')}</option> : areas.map(a => (
+        {loadingAreas ? <option>{t('loading', 'Cargando...')}</option> : areas.map(a => (
           <option key={a._id?.$oid || a._id} value={a._id?.$oid || a._id}>{a.nombre || a.name}</option>
         ))}
       </select>
@@ -327,7 +394,6 @@ export default function PuntoVenta() {
         <FaSearch style={{ position: 'absolute', left: 12, top: 12, color: tema.texto, opacity: 0.5 }} />
         <input 
           style={style.searchInput(tema)} 
-          // Usa 'searchProduct' (debes agregarlo al JSON) o un fallback
           placeholder={t('searchProduct', 'Buscar producto...')} 
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
@@ -337,11 +403,29 @@ export default function PuntoVenta() {
       <div style={style.catalogList(tema)}>
         {productosFiltrados.map(p => {
           const enCuenta = cuenta[p._id];
+          const stockDisponible = p.stock || 0;
+          const sinStock = stockDisponible <= 0;
+          
           return (
-            <div key={p._id} style={style.listItem(tema, !!enCuenta)} onClick={() => agregarProducto(p)}>
+            <div 
+              key={p._id} 
+              style={style.listItem(tema, !!enCuenta, sinStock)} 
+              onClick={() => !sinStock && agregarProducto(p)}
+            >
               <div>
                 <div style={{fontWeight: 600}}>{p.nombre || p.name}</div>
-                <div style={{fontSize: 12, opacity: 0.8}}>${(p.precio||0).toFixed(2)}</div>
+                <div style={{fontSize: 12, opacity: 0.8}}>
+                  ${(p.precio||0).toFixed(2)} 
+                  {sinStock ? (
+                    <span style={style.stockWarning(tema)}>
+                      {t('outOfStock', 'Sin stock')}
+                    </span>
+                  ) : (
+                    <span style={style.stockInfo(tema)}>
+                      {t('stock', 'Stock')}: {stockDisponible}
+                    </span>
+                  )}
+                </div>
               </div>
               {enCuenta && <span style={style.badge(tema)}>{enCuenta.cantidad}</span>}
             </div>
@@ -349,8 +433,7 @@ export default function PuntoVenta() {
         })}
         {productosFiltrados.length === 0 && (
             <div style={{padding: 20, textAlign: 'center', opacity: 0.6}}>
-                {/* Usa 'noSearchResults' (debes agregarlo al JSON) */}
-                {t('noSearchResults', 'No hay productos')}
+                {t('noProducts', 'No hay productos')}
             </div>
         )}
       </div>
@@ -359,21 +442,25 @@ export default function PuntoVenta() {
 
   const renderCuenta = () => (
     <div style={style.card(tema)}>
-      {/* Corregido: 'realTimeAccount' es la clave en tu JSON */}
       <h3 style={style.title(tema)}><FaCashRegister /> {t('realTimeAccount', 'Cuenta')}</h3>
       
       <div style={style.cuentaListContainer(tema)}>
         {Object.keys(cuenta).length === 0 ? (
           <div style={{textAlign: 'center', padding: 40, opacity: 0.5, fontStyle: 'italic'}}>
             <FaShoppingCart size={40} style={{marginBottom: 10}} />
-            <br/>{t('noProductsInAccount', 'Lista vacía')}
+            <br/>{t('emptyList', 'Lista vacía')}
           </div>
         ) : (
           Object.values(cuenta).map(p => (
             <div key={p._id} style={style.cuentaItem(tema)}>
               <div style={{flex: 1}}>
                 <div style={{fontWeight: 600}}>{p.nombre}</div>
-                <div style={{fontSize: 12}}>${(p.precio||0).toFixed(2)} {t('each', 'c/u')} x {p.cantidad}</div>
+                <div style={{fontSize: 12}}>
+                  ${(p.precio||0).toFixed(2)} {t('each', 'c/u')} x {p.cantidad}
+                  <span style={style.stockInfo(tema)}>
+                    ({t('remainingStock', 'Stock restante')}: {(p.stock || 0) - p.cantidad})
+                  </span>
+                </div>
               </div>
               <div style={{fontWeight: 'bold', marginRight: 10}}>
                 ${((p.precio||0)*p.cantidad).toFixed(2)}
@@ -406,7 +493,7 @@ export default function PuntoVenta() {
             onClick={atenderCliente}
             disabled={loading || Object.keys(cuenta).length === 0}
           >
-             {loading ? t('processing', '...') : t('attendCustomer', 'COBRAR')}
+             {loading ? t('processing', 'Procesando...') : t('checkout', 'COBRAR')}
           </button>
         </div>
       </div>
@@ -416,10 +503,8 @@ export default function PuntoVenta() {
   return (
     <div style={style.container}>
       <div style={style.headerControls}>
-        {/* Corregido: 'pointOfSale' es la clave en tu JSON */}
         <h2 style={style.title(tema)}><FaShoppingCart /> {t('pointOfSale', 'Punto de Venta')}</h2>
         <div style={style.headerRightControls}>
-          {/* Corregido: 'user' es la clave en tu JSON */}
           <span style={{fontWeight:600, color: tema.texto}}>
             {t('user', 'Usuario')}: {getStoredUser()?.usuario}
           </span>

@@ -4,6 +4,11 @@
   "searchProduct": "Search product...",
   "noSearchResults": "No matching products found",
   "selectArea": "Select area:",
+  "alertInsufficientStock": "Insufficient stock for",
+  "alertNoStock": "Not enough stock of",
+  "availableStock": "Available stock",
+  "outOfStock": "Out of stock",
+  "stock": "Stock",
   "loadingAreas": "Loading areas...",
   "errorLoadingAreas": "Error loading areas",
   "noAreasAvailable": "No areas available",
@@ -267,6 +272,7 @@
     "cancel": "Cancel",
     "create": "Create",
     "saving": "Saving...",
+    "product": "Product",
     "save_changes": "Save changes",
     "delete": "Delete",
     "deleting": "Deleting...",
@@ -420,6 +426,71 @@
     },
     "video": {
       "fallback": "Your browser does not support videos."
+    }
+  },
+  "dashboardT": {
+    "salesSummary": "Sales summary",
+    "last30days": "Last 30 days",
+    "salesByArea": "Sales by Area",
+    "quickActions": {
+      "title": "Quick Access"
+    },
+    "kpi": {
+      "salesToday": "Today's Sales",
+      "totalTransactions": "Total Transactions",
+      "averageTicket": "Average Ticket",
+      "newClients": "New Clients",
+      "totalProducts": "Total Products",
+      "today": "Today",
+      "average": "Average",
+      "inventory": "Inventory",
+      "transactions": "Transactions",
+      "registeredToday": "Registered today"
+    },
+    "topProducts": "Top Products",
+    "alerts": "Alerts",
+    "noAlerts": "No recent alerts",
+    "tasks": "Tasks",
+    "pendingTasks": "0 pending tasks",
+    "sparkAnalysis": "Spark Analysis",
+    "manageInventory": "Manage Inventory"
+  },
+  "widgets": {
+    "inventoryAlerts": {
+      "title": "Inventory Alerts",
+      "lowStockMessage": "{{product}} - Low stock: {{stock}} units",
+      "allGood": "Everything in order",
+      "sampleMessages": {
+        "laptop": "Gaming Laptop - Low stock: 8 units",
+        "mouse": "Wireless Mouse - Low stock: 3 units",
+        "keyboard": "Mechanical Keyboard - Low stock: 5 units"
+      }
+    },
+    "topProducts": {
+      "title": "Top Selling Products (Week)",
+      "loading": "Loading products...",
+      "sampleProducts": {
+        "laptop": "Gaming Laptop",
+        "smartphone": "Smartphone Pro",
+        "tablet": "Elite Tablet",
+        "monitor": "4K Monitor",
+        "keyboard": "Mechanical Keyboard"
+      }
+    },
+    "sales30Days": {
+      "title": "Last 30 Days Sales",
+      "average": "Average",
+      "noData": "No data"
+    },
+    "salesByArea": {
+      "title": "Sales by Area",
+      "loading": "Loading sales...",
+      "sampleAreas": {
+        "electronics": "Electronics",
+        "groceries": "Groceries",
+        "home": "Home",
+        "clothing": "Clothing"
+      }
     }
   }
 }

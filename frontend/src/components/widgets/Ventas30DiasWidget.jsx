@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { resumen30dias } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
-// ---- Hook para obtener las ventas reales ----
 const useVentas30Dias = () => {
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,6 @@ const useVentas30Dias = () => {
         registros = res.data;
       }
 
-      // Ordenar por fecha ASC
       const ordenados = registros.sort(
         (a, b) => new Date(a.fecha) - new Date(b.fecha)
       );
@@ -41,19 +40,18 @@ const useVentas30Dias = () => {
   return { ventas, loading };
 };
 
-// ---- Componente BarChart Mejorado ----
 const BarChart = ({ data, height = 220 }) => {
+  const { t } = useTranslation();
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   if (!data || data.length === 0) {
     return (
       <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
-        Sin datos
+        {t('widgets.sales30Days.noData')}
       </div>
     );
   }
 
-  // Extraer valores y calcular estadísticas
   const valores = data.map(d => Number(d.total) || 0);
   const maxVal = Math.max(...valores);
   const minVal = Math.min(...valores);
@@ -72,22 +70,20 @@ const BarChart = ({ data, height = 220 }) => {
         flexDirection: "column"
       }}
     >
-      {/* Header con estadísticas */}
       <div style={{ marginBottom: 12 }}>
         <h3 style={{ margin: 0, fontSize: 14, color: "#666", marginBottom: 4 }}>
-          Ventas Últimos 30 Días
+          {t('widgets.sales30Days.title')}
         </h3>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
           <span style={{ fontSize: 24, fontWeight: "bold", color: "#333" }}>
-            ${lastVal.toLocaleString('es-MX', { maximumFractionDigits: 2 })}
+            ${lastVal.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           </span>
           <span style={{ fontSize: 12, color: "#999" }}>
-            Promedio: ${avgVal.toLocaleString('es-MX', { maximumFractionDigits: 0 })}
+            {t('widgets.sales30Days.average')}: ${avgVal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </span>
         </div>
       </div>
 
-      {/* Contenedor de la gráfica */}
       <div style={{ 
         flex: 1, 
         display: 'flex', 
@@ -122,7 +118,6 @@ const BarChart = ({ data, height = 220 }) => {
               onMouseEnter={() => setHoveredIndex(idx)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
-              {/* Tooltip al hacer hover */}
               {isHovered && (
                 <div style={{
                   position: 'absolute',
@@ -140,15 +135,14 @@ const BarChart = ({ data, height = 220 }) => {
                   boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                 }}>
                   <div style={{ fontWeight: 'bold' }}>
-                    ${val.toLocaleString('es-MX', { maximumFractionDigits: 2 })}
+                    ${val.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                   </div>
                   <div style={{ fontSize: '10px', opacity: 0.8 }}>
-                    {new Date(data[idx].fecha).toLocaleDateString('es-MX', { 
+                    {new Date(data[idx].fecha).toLocaleDateString(undefined, { 
                       month: 'short', 
                       day: 'numeric' 
                     })}
                   </div>
-                  {/* Flecha del tooltip */}
                   <div style={{
                     position: 'absolute',
                     top: '100%',
@@ -167,7 +161,6 @@ const BarChart = ({ data, height = 220 }) => {
         })}
       </div>
 
-      {/* Línea base */}
       <div style={{ 
         height: '1px', 
         background: '#e5e7eb', 
@@ -177,8 +170,8 @@ const BarChart = ({ data, height = 220 }) => {
   );
 };
 
-// ---- Widget final ----
 const Ventas30DiasWidget = () => {
+  const { t } = useTranslation();
   const { ventas, loading } = useVentas30Dias();
 
   if (loading) {
@@ -194,7 +187,7 @@ const Ventas30DiasWidget = () => {
         justifyContent: "center",
         color: "#999"
       }}>
-        Cargando...
+        {t('common.loading')}
       </div>
     );
   }

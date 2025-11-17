@@ -3,6 +3,11 @@
   "productss": "Productos",
   "searchProduct": "buscando productos...",
   "noSearchResults": "No hay productos",
+  "alertInsufficientStock": "Stock insuficiente para",
+  "alertNoStock": "No hay suficiente stock de",
+  "availableStock": "Stock disponible",
+  "outOfStock": "Sin stock",
+  "stock": "Stock",
   "selectArea": "Seleccionar área:",
   "loadingAreas": "Cargando áreas...",
   "errorLoadingAreas": "Error al cargar áreas",
@@ -270,6 +275,7 @@
     "save_changes": "Guardar cambios",
     "delete": "Eliminar",
     "deleting": "Eliminando...",
+    "product": "Producto",
     "active": "Activo",
     "inactive": "Inactivo",
     "id": "ID",
@@ -420,6 +426,64 @@
     },
     "video": {
       "fallback": "Tu navegador no soporta videos."
+    }
+  },
+  "dashboardT": {
+    "quickActions": {
+      "title": "Accesos Rápidos"
+    },
+    "kpi": {
+      "salesToday": "Ventas de Hoy",
+      "totalTransactions": "Total de Transacciones",
+      "averageTicket": "Ticket Promedio",
+      "newClients": "Nuevos Clientes",
+      "totalProducts": "Total Productos",
+      "today": "Hoy",
+      "average": "Promedio",
+      "inventory": "Inventario",
+      "transactions": "Transacciones",
+      "registeredToday": "Registrados hoy"
+    },
+    "salesByArea": "Ventas por Área",
+    "sparkAnalysis": "Análisis Spark",
+    "manageInventory": "Gestionar Inventario"
+  },
+  "widgets": {
+    "inventoryAlerts": {
+      "title": "Alertas de Inventario",
+      "lowStockMessage": "{{product}} - Stock bajo: {{stock}} unidades",
+      "allGood": "Todo en orden",
+      "sampleMessages": {
+        "laptop": "Laptop Gamer - Stock bajo: 8 unidades",
+        "mouse": "Mouse Inalámbrico - Stock bajo: 3 unidades",
+        "keyboard": "Teclado Mecánico - Stock bajo: 5 unidades"
+      }
+    },
+    "topProducts": {
+      "title": "Top Productos Más Vendidos (Semana)",
+      "loading": "Cargando productos...",
+      "sampleProducts": {
+        "laptop": "Laptop Gamer",
+        "smartphone": "Smartphone Pro",
+        "tablet": "Tablet Elite",
+        "monitor": "Monitor 4K",
+        "keyboard": "Teclado Mecánico"
+      }
+    },
+    "sales30Days": {
+      "title": "Ventas Últimos 30 Días",
+      "average": "Promedio",
+      "noData": "Sin datos"
+    },
+    "salesByArea": {
+      "title": "Ventas por Área",
+      "loading": "Cargando ventas...",
+      "sampleAreas": {
+        "electronics": "Electrónica",
+        "groceries": "Abarrotes",
+        "home": "Hogar",
+        "clothing": "Ropa"
+      }
     }
   }
 }

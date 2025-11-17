@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { getProductos } from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 const AlertasInventarioWidget = () => {
+  const { t } = useTranslation();
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,26 +22,47 @@ const AlertasInventarioWidget = () => {
           })
           .map(producto => ({
             id: producto._id,
-            mensaje: `${producto.nombre || 'Producto'} - Stock bajo: ${producto.stock || producto.cantidad || 0} unidades`,
+            mensaje: t('widgets.inventoryAlerts.lowStockMessage', {
+              product: producto.nombre || t('common.product'),
+              stock: producto.stock || producto.cantidad || 0
+            }),
             nivel: producto.stock < 5 ? 'alto' : 'medio'
           }));
 
         if (alertasInventario.length === 0) {
-          // Datos de ejemplo si no hay alertas reales
           setAlertas([
-            { id: 1, mensaje: "Laptop Gamer - Stock bajo: 8 unidades", nivel: 'medio' },
-            { id: 2, mensaje: "Mouse Inalámbrico - Stock bajo: 3 unidades", nivel: 'alto' },
-            { id: 3, mensaje: "Teclado Mecánico - Stock bajo: 5 unidades", nivel: 'alto' }
+            { 
+              id: 1, 
+              mensaje: t('widgets.inventoryAlerts.sampleMessages.laptop'), 
+              nivel: 'medio' 
+            },
+            { 
+              id: 2, 
+              mensaje: t('widgets.inventoryAlerts.sampleMessages.mouse'), 
+              nivel: 'alto' 
+            },
+            { 
+              id: 3, 
+              mensaje: t('widgets.inventoryAlerts.sampleMessages.keyboard'), 
+              nivel: 'alto' 
+            }
           ]);
         } else {
           setAlertas(alertasInventario);
         }
       } catch (error) {
         console.error('Error fetching alertas:', error);
-        // Datos de ejemplo en caso de error
         setAlertas([
-          { id: 1, mensaje: "Laptop Gamer - Stock bajo: 8 unidades", nivel: 'medio' },
-          { id: 2, mensaje: "Mouse Inalámbrico - Stock bajo: 3 unidades", nivel: 'alto' }
+          { 
+            id: 1, 
+            mensaje: t('widgets.inventoryAlerts.sampleMessages.laptop'), 
+            nivel: 'medio' 
+          },
+          { 
+            id: 2, 
+            mensaje: t('widgets.inventoryAlerts.sampleMessages.mouse'), 
+            nivel: 'alto' 
+          }
         ]);
       } finally {
         setLoading(false);
@@ -47,14 +70,16 @@ const AlertasInventarioWidget = () => {
     };
 
     fetchAlertas();
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
       <div style={{ background: '#fff', borderRadius: 12, padding: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Alertas de Inventario</div>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+          {t('widgets.inventoryAlerts.title')}
+        </div>
         <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: 20 }}>
-          Cargando alertas...
+          {t('common.loading')}
         </div>
       </div>
     );
@@ -62,11 +87,13 @@ const AlertasInventarioWidget = () => {
 
   return (
     <div style={{ background: '#fff', borderRadius: 12, padding: 16 }}>
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Alertas de Inventario</div>
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+        {t('widgets.inventoryAlerts.title')}
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {alertas.length === 0 ? (
           <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: 20 }}>
-            ✅ Todo en orden
+            ✅ {t('widgets.inventoryAlerts.allGood')}
           </div>
         ) : (
           alertas.map((alerta) => (

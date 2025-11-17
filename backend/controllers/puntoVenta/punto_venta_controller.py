@@ -47,7 +47,8 @@ def obtener_productos(area_id):
             {
                 "_id": str(p["_id"]),
                 "nombre": p["nombre"],
-                "precio": p.get("precio", 0), 
+                "precio": p.get("precio", 0),
+                "stock": p.get("stock", 0),  # <--- ¡Línea agregada aquí!
                 # Devolvemos el area_id original (string) que recibimos
                 # Esto es lo que el frontend usará
                 "area_id": area_id 
@@ -306,3 +307,69 @@ def resumen_grafica_30_dias():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": "Error al procesar la gráfica"}), 500
+    
+# ===============================
+# GET /api/dashboard/resumen
+# ===============================
+@punto_venta.route("/dashboard/resumen", methods=["GET"])
+def obtener_resumen_dashboard():
+    try:
+        # 1. Definir rango de tiempo (Hoy UTC)
+        hoy_inicio = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        hoy_fin = hoy_inicio + timedelta(days=1)
+
+        # 2. Calcular Ventas, Transacciones y Ticket Promedio de HOY
+        pipeline_ventas = [
+            {
+                "$match": {
+                    "created_at": {
+                        "$gte": hoy_inicio,
+                        "$lt": hoy_fin
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": None,
+                    "totalVentas": {"$sum": "$total"},
+                    "numTransacciones": {"$sum": 1}
+                }
+            }
+        ]
+        
+        res_ventas = list(db["ventas"].aggregate(pipeline_ventas))
+        
+        if res_ventas:
+            ventas_hoy = res_ventas[0]["totalVentas"]
+            transacciones_hoy = res_ventas[0]["numTransacciones"]
+            ticket_promedio = ventas_hoy / transacciones_hoy if transacciones_hoy > 0 else 0
+        else:
+            ventas_hoy = 0
+            transacciones_hoy = 0
+            ticket_promedio = 0
+
+        # 3. Contar nuevos clientes de HOY
+        # (Asumiendo que tienes colección 'clientes' con campo created_at o createdAt)
+        nuevos_clientes = db["clientes"].count_documents({
+            "$or": [
+                {"created_at": {"$gte": hoy_inicio, "$lt": hoy_fin}},
+                {"createdAt": {"$gte": hoy_inicio, "$lt": hoy_fin}}
+            ]
+        })
+
+        # 4. Contar Total de Productos
+        total_productos = db["productos"].count_documents({})
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "ventasHoy": ventas_hoy,
+                "transacciones": transacciones_hoy,
+                "ticketPromedio": ticket_promedio,
+                "nuevosClientes": nuevos_clientes,
+                "totalProductos": total_productos
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Error en dashboard resumen: {str(e)}"}), 500
