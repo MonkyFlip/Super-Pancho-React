@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { temas } from '../../styles/temas';
-import { FaCashRegister, FaClipboardList, FaSync, FaShoppingCart, FaFileAlt, FaSignOutAlt } from 'react-icons/fa';
+import { FaCashRegister, FaClipboardList, FaSync, FaShoppingCart, FaSignOutAlt, FaSearch, FaTrash } from 'react-icons/fa';
 import { getApiAreas, getProductosByArea, crearVenta } from '../../services/api';
 import { isAuthenticated, getStoredUser, logout } from '../../services/auth';
 import { useTranslation } from 'react-i18next';
@@ -11,179 +11,176 @@ const THEME_KEY = 'app_theme_selected';
 
 const style = {
   container: { 
-    padding: 20,
+    padding: 15, 
     height: '100vh',
     display: 'flex',
-    flexDirection: 'column'
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr', // Cambiado para dar más espacio a la izquierda
-    gap: 20,
-    flex: 1,
-    minHeight: 0,
-  },
-  card: (tema) => ({
-    background: tema.fondo_card,
-    borderRadius: 12,
-    boxShadow: tema.sombra,
-    padding: 16,
-    display: 'flex',
     flexDirection: 'column',
-    border: `1px solid ${tema.borde}`,
-    height: '100%',
-  }),
-  title: (tema) => ({
-    fontSize: 20,
-    fontWeight: 700,
-    color: tema.texto,
-    marginBottom: 16,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  }),
-  select: (tema) => ({
-    background: tema.fondo_card,
-    color: tema.texto,
-    padding: 12,
-    borderRadius: 8,
-    border: `1px solid ${tema.borde}`,
-    marginBottom: 16,
-    cursor: 'pointer',
-    fontSize: 16,
-    width: '100%',
-  }),
-  list: (tema) => ({
-    flex: 1,
-    overflowY: 'auto',
-    borderRadius: 8,
-    border: `1px solid ${tema.borde}`,
-    background: tema.fondo,
-    minHeight: 0,
-  }),
-  listItem: (tema, selected = false) => ({
-    padding: '12px 16px',
-    borderBottom: `1px solid ${tema.borde}`,
-    cursor: 'pointer',
-    color: tema.texto,
-    background: selected ? tema.primario + '20' : 'transparent',
-    borderLeft: selected ? `4px solid ${tema.primario}` : '4px solid transparent',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      background: tema.primario + '10',
-    }
-  }),
-  cuenta: (tema) => ({
-    flex: 1,
-    overflowY: 'auto',
-    borderRadius: 8,
-    background: tema.fondo,
-    color: tema.texto,
-    fontFamily: 'Consolas, monospace',
-    padding: 20,
-    border: `1px solid ${tema.borde}`,
-    minHeight: 0,
-    fontSize: 15,
-    lineHeight: 1.6,
-  }),
-  btn: (tema, color, disabled = false) => ({
-    background: disabled ? tema.borde : (color || tema.primario),
-    border: 'none',
-    padding: '12px 24px',
-    borderRadius: 8,
-    color: '#fff',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    fontWeight: 600,
-    fontSize: 14,
-    opacity: disabled ? 0.6 : 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    transition: 'all 0.2s ease',
-    '&:hover:not(:disabled)': {
-      opacity: 0.9,
-      transform: 'translateY(-1px)',
-    }
-  }),
-  footer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginTop: 16,
-    paddingTop: 16,
-    borderTop: `1px solid ${temas.bosque_claro.borde}`,
+    boxSizing: 'border-box',
+    overflow: 'hidden', 
+    background: '#f4f6f8'
   },
-  emptyState: (tema) => ({
-    textAlign: 'center',
-    padding: 40,
-    color: tema.texto + '80',
-    fontStyle: 'italic',
-  }),
-  productInfo: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  quantityBadge: (tema) => ({
-    background: tema.primario,
-    color: '#fff',
-    borderRadius: '50%',
-    width: 24,
-    height: 24,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 12,
-    fontWeight: 'bold',
-  }),
-  productName: {
-    fontWeight: 600,
-    marginBottom: 4,
-  },
-  productPrice: (tema) => ({
-    fontSize: 12,
-    color: tema.texto + '80',
-  }),
-  cuentaItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    padding: '10px 0',
-    borderBottom: `1px solid ${temas.bosque_claro.borde}20`,
-  },
-  cuentaTotal: {
-    borderTop: `2px solid ${temas.bosque_claro.borde}`,
-    paddingTop: 16,
-    marginTop: 16,
-    fontWeight: 'bold',
-    fontSize: 18,
-    textAlign: 'right',
-  },
-  removeBtn: (tema) => ({
-    background: 'none',
-    border: 'none',
-    color: tema.peligro,
-    cursor: 'pointer',
-    fontSize: 16,
-    padding: '6px 10px',
-    borderRadius: 4,
-    '&:hover': {
-      background: tema.peligro + '20',
-    }
-  }),
   headerControls: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 10,
+    flexShrink: 0,
+    height: 50,
+    position: 'relative',
+    zIndex: 100,
   },
-  headerRightControls: {
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: '65% 33%',
+    gap: '2%',
+    flex: 1,
+    minHeight: 0, 
+    overflow: 'hidden',
+    position: 'relative',
+    zIndex: 1
+  },
+  card: (tema) => ({
+    background: tema.fondo_card,
+    borderRadius: 12,
+    boxShadow: tema.sombra,
+    display: 'flex',
+    flexDirection: 'column',
+    border: `1px solid ${tema.borde}`,
+    height: '100%',
+    overflow: 'hidden',
+    padding: 16,
+    boxSizing: 'border-box'
+  }),
+  title: (tema) => ({
+    fontSize: 18,
+    fontWeight: 700,
+    color: tema.texto,
+    marginBottom: 12,
     display: 'flex',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+    flexShrink: 0
+  }),
+  searchContainer: {
+    position: 'relative',
+    marginBottom: 10,
+    flexShrink: 0,
+  },
+  searchInput: (tema) => ({
+    width: '100%',
+    padding: '10px 10px 10px 35px',
+    borderRadius: 8,
+    border: `1px solid ${tema.borde}`,
+    background: tema.fondo,
+    color: tema.texto,
+    fontSize: 15,
+    outline: 'none',
+    boxSizing: 'border-box'
+  }),
+  select: (tema) => ({
+    background: tema.fondo_card,
+    color: tema.texto,
+    padding: 10,
+    borderRadius: 8,
+    border: `1px solid ${tema.borde}`,
+    marginBottom: 10,
+    cursor: 'pointer',
+    fontSize: 15,
+    width: '100%',
+    outline: 'none',
+    flexShrink: 0
+  }),
+  catalogList: (tema) => ({
+    flex: 1, 
+    overflowY: 'auto', 
+    borderRadius: 8,
+    border: `1px solid ${tema.borde}`,
+    background: tema.fondo,
+  }),
+  listItem: (tema, selected = false) => ({
+    padding: '12px',
+    borderBottom: `1px solid ${tema.borde}`,
+    cursor: 'pointer',
+    color: tema.texto,
+    background: selected ? tema.primario + '20' : 'transparent',
+    borderLeft: selected ? `4px solid ${tema.primario}` : '4px solid transparent',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    '&:hover': { background: tema.primario + '10' }
+  }),
+  cuentaListContainer: (tema) => ({
+    flex: 1, 
+    overflowY: 'auto', 
+    background: tema.fondo,
+    borderRadius: 8,
+    border: `1px solid ${tema.borde}`,
+    padding: 10,
+    marginBottom: 10
+  }),
+  cuentaItem: (tema) => ({
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: `1px solid ${tema.borde}40`,
+    fontSize: 14,
+    color: tema.texto
+  }),
+  cuentaFooter: (tema) => ({
+    flexShrink: 0,
+    borderTop: `2px solid ${tema.borde}`,
+    paddingTop: 10,
+  }),
+  totalDisplay: (tema) => ({
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: tema.texto,
+    textAlign: 'right',
+    marginBottom: 15
+  }),
+  actionsRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 2fr', 
+    gap: 10
+  },
+  btn: (tema, tipo = 'primary', disabled = false) => {
+    let bg = tema.primario;
+    if (tipo === 'danger') bg = tema.peligro;
+    if (disabled) bg = tema.borde;
+
+    return {
+      background: bg,
+      border: 'none',
+      padding: '14px',
+      borderRadius: 8,
+      color: '#fff',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      fontWeight: 700,
+      fontSize: 15,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      opacity: disabled ? 0.6 : 1,
+      transition: 'transform 0.1s',
+      '&:active': { transform: 'scale(0.98)' }
+    }
+  },
+  removeBtn: (tema) => ({
+    background: 'transparent',
+    border: 'none',
+    color: tema.peligro,
+    cursor: 'pointer',
+    padding: 5,
+    fontSize: 14,
+    marginLeft: 8
+  }),
+  headerRightControls: { 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: 10 
   },
   iconButton: (tema) => ({
     background: tema.fondo_card,
@@ -191,60 +188,19 @@ const style = {
     color: tema.texto,
     cursor: 'pointer',
     borderRadius: '50%',
-    width: 38,
-    height: 38,
+    width: 36,
+    height: 36,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 16,
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      background: tema.borde,
-      color: tema.primario,
-    }
   }),
-  userInfo: (tema) => ({
-    color: tema.texto,
-    fontSize: 14,
-    fontWeight: 600,
-    padding: '8px 12px',
-    background: tema.fondo_card,
-    borderRadius: 8,
-    border: `1px solid ${tema.borde}`,
-  }),
-  themeLanguageContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-  },
-  leftAlignedControls: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-  },
-  leftButtonsContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 10,
-  },
-  leftButton: (tema) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '12px 16px',
-    borderRadius: 8,
-    background: tema.fondo_card,
-    color: tema.texto,
-    border: `1px solid ${tema.borde}`,
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    textAlign: 'left',
-    width: '100%',
-    '&:hover': {
-      background: tema.primario + '10',
-      borderColor: tema.primario,
-    }
+  badge: (tema) => ({
+    background: tema.primario,
+    color: '#fff',
+    borderRadius: 12,
+    padding: '2px 8px',
+    fontSize: 12,
+    fontWeight: 'bold'
   })
 };
 
@@ -252,325 +208,205 @@ export default function PuntoVenta() {
   const { t, i18n } = useTranslation();
   const [temaKey, setTemaKey] = useState(localStorage.getItem(THEME_KEY) || 'bosque_claro');
   const tema = temas[temaKey];
+  
   const [areas, setAreas] = useState([]);
   const [productos, setProductos] = useState([]);
   const [areaSeleccionada, setAreaSeleccionada] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  
   const [cuenta, setCuenta] = useState({});
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingAreas, setLoadingAreas] = useState(false);
-  const [errorAreas, setErrorAreas] = useState(null);
 
   const ensureAuth = useCallback(() => {
-    if (!isAuthenticated()) {
-      window.location.hash = '#/login';
-      return false;
-    }
+    if (!isAuthenticated()) { window.location.hash = '#/login'; return false; }
     return true;
   }, []);
 
   const handleApiResponse = (response) => {
     let data = [];
-
-    if (Array.isArray(response)) {
-      data = response;
-    } else if (Array.isArray(response?.data)) {
-      data = response.data;
-    } else if (response?.data && Array.isArray(response.data.data)) {
-      data = response.data.data;
-    } else if (response?.data && typeof response.data === 'object') {
-      data = Object.values(response.data);
-    }
-
-    return data.map((item) => ({
-      ...item,
-      _id: item._id?.$oid || item._id || item.id,
-    }));
+    if (Array.isArray(response)) data = response;
+    else if (Array.isArray(response?.data)) data = response.data;
+    else if (response?.data && Array.isArray(response.data.data)) data = response.data.data;
+    return data.map(item => ({ ...item, _id: item._id?.$oid || item._id || item.id }));
   };
 
   const fetchAreas = useCallback(async () => {
     setLoadingAreas(true);
-    setErrorAreas(null);
     try {
       const res = await getApiAreas();
       const areasData = res.data?.data || res.data || [];
       setAreas(areasData);
-
       if (areasData.length > 0 && !areaSeleccionada) {
-        const primerId = areasData[0]._id?.$oid || areasData[0]._id || areasData[0].id;
-        setAreaSeleccionada(primerId || '');
+        setAreaSeleccionada(areasData[0]._id?.$oid || areasData[0]._id);
       }
-    } catch (e) {
-      console.error('Error cargando áreas:', e);
-      setErrorAreas('Error al cargar las áreas');
-      setAreas([]);
-    } finally {
-      setLoadingAreas(false);
-    }
+    } catch (e) { console.error(e); } 
+    finally { setLoadingAreas(false); }
   }, [areaSeleccionada]);
 
-  const fetchProductos = useCallback(async (idDeArea) => {
-    if (!idDeArea) return;
-    try {
-      const res = await getProductosByArea(idDeArea);
-      const productosData = handleApiResponse(res);
-      setProductos(productosData);
-    } catch (e) {
-      console.error('Error cargando productos:', e);
-      setProductos([]);
-    }
+  const fetchProductos = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const res = await getProductosByArea(id);
+      setProductos(handleApiResponse(res));
+      setBusqueda('');
+    } catch (e) { setProductos([]); }
   }, []);
 
-  useEffect(() => {
-    if (ensureAuth()) fetchAreas();
-  }, [ensureAuth, fetchAreas]);
+  useEffect(() => { if (ensureAuth()) fetchAreas(); }, [ensureAuth, fetchAreas]);
+  useEffect(() => { if (areaSeleccionada) fetchProductos(areaSeleccionada); }, [areaSeleccionada, fetchProductos]);
 
-  useEffect(() => {
-    if (areaSeleccionada) {
-      fetchProductos(areaSeleccionada);
-    }
-  }, [areaSeleccionada, fetchProductos]);
-
-  const handleThemeChange = (newThemeKey) => {
-    setTemaKey(newThemeKey);
-    try {
-      localStorage.setItem(THEME_KEY, newThemeKey);
-    } catch (error) {
-      console.error('Error guardando tema:', error);
-    }
+  const agregarProducto = (p) => {
+    const nueva = { ...cuenta };
+    const id = p._id;
+    if (nueva[id]) nueva[id].cantidad++;
+    else nueva[id] = { ...p, cantidad: 1 };
+    setCuenta(nueva);
+    recalcularTotal(nueva);
   };
 
-  const handleLanguageChange = (newLang) => {
-    i18n.changeLanguage(newLang);
-  };
-
-  const handleLogout = () => {
-    logout();
-    window.location.hash = '#/login';
-  };
-
-  const agregarProducto = (producto) => {
-    const nuevaCuenta = { ...cuenta };
-    if (nuevaCuenta[producto._id]) {
-      nuevaCuenta[producto._id].cantidad += 1;
-    } else {
-      nuevaCuenta[producto._id] = { 
-        ...producto, 
-        cantidad: 1 
-      };
-    }
-    setCuenta(nuevaCuenta);
-    recalcularTotal(nuevaCuenta);
-  };
-
-  const quitarProducto = (productoId) => {
-    const nuevaCuenta = { ...cuenta };
-    if (nuevaCuenta[productoId]) {
-      if (nuevaCuenta[productoId].cantidad > 1) {
-        nuevaCuenta[productoId].cantidad -= 1;
-      } else {
-        delete nuevaCuenta[productoId];
-      }
-      setCuenta(nuevaCuenta);
-      recalcularTotal(nuevaCuenta);
+  const quitarProducto = (id) => {
+    const nueva = { ...cuenta };
+    if (nueva[id]) {
+      if (nueva[id].cantidad > 1) nueva[id].cantidad--;
+      else delete nueva[id];
+      setCuenta(nueva);
+      recalcularTotal(nueva);
     }
   };
 
-  const recalcularTotal = (cuentaActual) => {
-    const total = Object.values(cuentaActual).reduce(
-      (sum, p) => sum + (p.precio || p.price || 0) * p.cantidad,
-      0
-    );
-    setTotal(total);
+  const eliminarProductoCompleto = (id) => {
+    const nueva = { ...cuenta };
+    delete nueva[id];
+    setCuenta(nueva);
+    recalcularTotal(nueva);
   };
 
-  const limpiarCuenta = () => {
-    setCuenta({});
-    setTotal(0);
+  const recalcularTotal = (c) => {
+    const t = Object.values(c).reduce((sum, p) => sum + (p.precio || p.price || 0) * p.cantidad, 0);
+    setTotal(t);
   };
 
   const atenderCliente = async () => {
-    if (!Object.keys(cuenta).length) {
-      alert('No hay productos en la cuenta.');
-      return;
-    }
-
+    if (!Object.keys(cuenta).length) return;
     setLoading(true);
     try {
-      const venta = {
-        cliente_ref: null,
-        // --- CAMBIO AQUÍ ---
-        productos: Object.values(cuenta).map((p) => ({
-          producto_id: p._id,     // <-- Enviar el ID del producto
-          cantidad: p.cantidad,
-          area_id: p.area_id      // <-- Enviar el ID del área
-        })),
-        // --- FIN DEL CAMBIO ---
-        vendedor_key: getStoredUser()?.usuario || 'admin',
-        metodo_pago: 'efectivo',
-        estado: 'completada',
-        // No es necesario enviar 'total', ya que el backend lo calcula de forma segura.
-      };
-      await crearVenta(venta);
-      alert('✅ Venta registrada correctamente.');
-      limpiarCuenta();
-    } catch (e) {
-      console.error('Error registrando venta:', e);
-      alert('❌ Error al registrar la venta.');
-    } finally {
-      setLoading(false);
-    }
+      await crearVenta({
+        cliente_ref: null,
+        productos: Object.values(cuenta).map(p => ({ producto_id: p._id, cantidad: p.cantidad, area_id: p.area_id })),
+        vendedor_key: getStoredUser()?.usuario || 'admin',
+        metodo_pago: 'efectivo',
+        estado: 'completada',
+      });
+      // Usando claves del JSON
+      alert(t('alertSaleSuccess', 'Venta registrada'));
+      setCuenta({}); setTotal(0);
+    } catch (e) { 
+      alert(t('alertSaleError', 'Error al registrar')); 
+    } 
+    finally { setLoading(false); }
   };
 
+  const productosFiltrados = productos.filter(p => 
+    (p.nombre || p.name || '').toLowerCase().includes(busqueda.toLowerCase())
+  );
 
-  const renderColumnaIzquierda = () => (
+  const renderCatalogo = () => (
     <div style={style.card(tema)}>
-      <h3 style={style.title(tema)}>
-        <FaClipboardList /> {t('productss', 'Productos')}
-      </h3>
+      {/* Corregido: 'productss' es la clave en tu JSON */}
+      <h3 style={style.title(tema)}><FaClipboardList /> {t('productss', 'Productos')}</h3>
       
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 8, color: tema.texto, fontWeight: 600 }}>
-          {t('selectArea', 'Seleccionar área:')}
-        </label>
-        <select
-          style={style.select(tema)}
-          value={areaSeleccionada}
-          onChange={(e) => setAreaSeleccionada(e.target.value)}
-          disabled={loadingAreas}
-        >
-          {loadingAreas ? (
-            <option value="">{t('loadingAreas', 'Cargando áreas...')}</option>
-          ) : errorAreas ? (
-            <option value="">{t('errorLoadingAreas', 'Error al cargar áreas')}</option>
-          ) : Array.isArray(areas) && areas.length > 0 ? (
-            areas.map((a) => {
-              const areaId = a._id?.$oid || a._id || a.id;
-              return (
-                <option key={areaId} value={areaId}>
-                  {a.nombre || a.name}
-                </option>
-              );
-            })
-          ) : (
-            <option value="">{t('noAreasAvailable', 'No hay áreas disponibles')}</option>
-          )}
-        </select>
+      <select style={style.select(tema)} value={areaSeleccionada} onChange={e => setAreaSeleccionada(e.target.value)}>
+        {loadingAreas ? <option>{t('loadingAreas', 'Cargando...')}</option> : areas.map(a => (
+          <option key={a._id?.$oid || a._id} value={a._id?.$oid || a._id}>{a.nombre || a.name}</option>
+        ))}
+      </select>
+
+      <div style={style.searchContainer}>
+        <FaSearch style={{ position: 'absolute', left: 12, top: 12, color: tema.texto, opacity: 0.5 }} />
+        <input 
+          style={style.searchInput(tema)} 
+          // Usa 'searchProduct' (debes agregarlo al JSON) o un fallback
+          placeholder={t('searchProduct', 'Buscar producto...')} 
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+        />
       </div>
 
-      <div style={{ marginBottom: 8, color: tema.texto, fontWeight: 600 }}>
-        {t('areaProducts', 'Productos del área:')}
-      </div>
-
-      <div style={style.list(tema)}>
-        {Array.isArray(productos) && productos.length > 0 ? (
-          productos.map((p) => (
-            <div
-              key={p._id || p.id}
-              style={style.listItem(tema, cuenta[p._id || p.id])}
-              onClick={() => agregarProducto(p)}
-            >
-              <div style={style.productInfo}>
-                <div style={{ flex: 1 }}>
-                  <div style={style.productName}>
-                    {p.nombre || p.name}
-                  </div>
-                  <div style={style.productPrice(tema)}>
-                    ${(p.precio || p.price || 0).toFixed(2)}
-                  </div>
-                </div>
-                {cuenta[p._id || p.id] && (
-                  <div style={style.quantityBadge(tema)}>
-                    {cuenta[p._id || p.id].cantidad}
-                  </div>
-                )}
+      <div style={style.catalogList(tema)}>
+        {productosFiltrados.map(p => {
+          const enCuenta = cuenta[p._id];
+          return (
+            <div key={p._id} style={style.listItem(tema, !!enCuenta)} onClick={() => agregarProducto(p)}>
+              <div>
+                <div style={{fontWeight: 600}}>{p.nombre || p.name}</div>
+                <div style={{fontSize: 12, opacity: 0.8}}>${(p.precio||0).toFixed(2)}</div>
               </div>
+              {enCuenta && <span style={style.badge(tema)}>{enCuenta.cantidad}</span>}
             </div>
-          ))
-        ) : (
-          <div style={style.emptyState(tema)}>
-            {loadingAreas ? t('loadingProducts', 'Cargando productos...') : t('noProductsAvailable', 'No hay productos disponibles en esta área')}
-          </div>
+          );
+        })}
+        {productosFiltrados.length === 0 && (
+            <div style={{padding: 20, textAlign: 'center', opacity: 0.6}}>
+                {/* Usa 'noSearchResults' (debes agregarlo al JSON) */}
+                {t('noSearchResults', 'No hay productos')}
+            </div>
         )}
       </div>
     </div>
   );
 
-  const renderColumnaDerecha = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Cuenta en tiempo real - Ahora arriba a la derecha */}
-      <div style={style.card(tema)}>
-        <h3 style={style.title(tema)}>
-          <FaCashRegister /> {t('realTimeAccount', 'Cuenta en Tiempo Real')}
-        </h3>
-
-        <div style={style.cuenta(tema)}>
-          {Object.values(cuenta).length > 0 ? (
-            <>
-              {Object.values(cuenta).map((p) => (
-                <div key={p._id || p.id} style={style.cuentaItem}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 15 }}>
-                      {p.nombre || p.name} x{p.cantidad}
-                    </div>
-                    <div style={{ fontSize: 13, color: tema.texto + '80' }}>
-                      ${(p.precio || p.price || 0).toFixed(2)} {t('each', 'c/u')}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontWeight: 600, minWidth: 90, textAlign: 'right', fontSize: 15 }}>
-                      ${((p.precio || p.price || 0) * p.cantidad).toFixed(2)}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        quitarProducto(p._id || p.id);
-                      }}
-                      style={style.removeBtn(tema)}
-                      title={t('removeProduct', 'Quitar un producto')}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <div style={style.cuentaTotal}>
-                {t('total', 'Total')}: ${total.toFixed(2)}
+  const renderCuenta = () => (
+    <div style={style.card(tema)}>
+      {/* Corregido: 'realTimeAccount' es la clave en tu JSON */}
+      <h3 style={style.title(tema)}><FaCashRegister /> {t('realTimeAccount', 'Cuenta')}</h3>
+      
+      <div style={style.cuentaListContainer(tema)}>
+        {Object.keys(cuenta).length === 0 ? (
+          <div style={{textAlign: 'center', padding: 40, opacity: 0.5, fontStyle: 'italic'}}>
+            <FaShoppingCart size={40} style={{marginBottom: 10}} />
+            <br/>{t('noProductsInAccount', 'Lista vacía')}
+          </div>
+        ) : (
+          Object.values(cuenta).map(p => (
+            <div key={p._id} style={style.cuentaItem(tema)}>
+              <div style={{flex: 1}}>
+                <div style={{fontWeight: 600}}>{p.nombre}</div>
+                <div style={{fontSize: 12}}>${(p.precio||0).toFixed(2)} {t('each', 'c/u')} x {p.cantidad}</div>
               </div>
-            </>
-          ) : (
-            <div style={style.emptyState(tema)}>
-              {t('noProductsInAccount', 'No hay productos en la cuenta')}
+              <div style={{fontWeight: 'bold', marginRight: 10}}>
+                ${((p.precio||0)*p.cantidad).toFixed(2)}
+              </div>
+              <div style={{display:'flex'}}>
+                <button style={style.removeBtn(tema)} onClick={(e) => { e.stopPropagation(); quitarProducto(p._id); }}>-</button>
+                <button style={style.removeBtn(tema)} onClick={(e) => { e.stopPropagation(); eliminarProductoCompleto(p._id); }}><FaTrash size={12}/></button>
+              </div>
             </div>
-          )}
-        </div>
+          ))
+        )}
       </div>
 
-      {/* Botones operativos - Ahora abajo a la derecha */}
-      <div style={style.card(tema)}>
-        <h3 style={style.title(tema)}>
-          <FaShoppingCart /> {t('actions', 'Acciones')}
-        </h3>
-        <div style={style.leftButtonsContainer}>
-          
-          <button
-            style={style.leftButton(tema)}
-            onClick={limpiarCuenta}
+      <div style={style.cuentaFooter(tema)}>
+        <div style={style.totalDisplay(tema)}>
+          {t('total', 'Total')}: ${total.toFixed(2)}
+        </div>
+        
+        <div style={style.actionsRow}>
+          <button 
+            style={style.btn(tema, 'danger', Object.keys(cuenta).length === 0)} 
+            onClick={() => { setCuenta({}); setTotal(0); }}
             disabled={loading || Object.keys(cuenta).length === 0}
           >
             <FaSync /> {t('clear', 'Limpiar')}
           </button>
           
-          <button
-            style={style.leftButton(tema)}
+          <button 
+            style={style.btn(tema, 'primary', Object.keys(cuenta).length === 0)}
             onClick={atenderCliente}
             disabled={loading || Object.keys(cuenta).length === 0}
           >
-            {loading ? t('processing', 'Procesando...') : (
-              <>
-                ✅ {t('attendCustomer', 'Atender Cliente')}
-              </>
-            )}
+             {loading ? t('processing', '...') : t('attendCustomer', 'COBRAR')}
           </button>
         </div>
       </div>
@@ -579,54 +415,40 @@ export default function PuntoVenta() {
 
   return (
     <div style={style.container}>
-      
-      {/* ===== ÁREA MODIFICADA ===== */}
       <div style={style.headerControls}>
-        {/* Lado Izquierdo: Título (sin cambios) */}
-        <h2 style={style.title(tema)}>
-          <FaShoppingCart /> {t('pointOfSale', 'Punto de Venta')}
-        </h2>
-        
-        {/* Lado Derecho: Controles de usuario y configuración */}
+        {/* Corregido: 'pointOfSale' es la clave en tu JSON */}
+        <h2 style={style.title(tema)}><FaShoppingCart /> {t('pointOfSale', 'Punto de Venta')}</h2>
         <div style={style.headerRightControls}>
-          <div style={style.userInfo(tema)}>
-            {t('user', 'Usuario')}: {getStoredUser()?.usuario || 'admin'}
-          </div>
-
-          {/* Controles de Tema e Idioma (MOVIDOS AQUÍ) */}
-          <div style={style.themeLanguageContainer}>
-            <CambioIdioma 
-              onChange={handleLanguageChange} 
-              defaultLang={i18n.language}
-              direction="down" 
-            />
-            <CambioTema 
-              value={temaKey} 
-              onChange={handleThemeChange}
-              direction="down" 
-            />
-          </div>
+          {/* Corregido: 'user' es la clave en tu JSON */}
+          <span style={{fontWeight:600, color: tema.texto}}>
+            {t('user', 'Usuario')}: {getStoredUser()?.usuario}
+          </span>
           
-          {/* Botón de Logout (MOVIDO AQUÍ y re-estilizado) */}
-          <button
-            onClick={handleLogout}
-            style={style.iconButton(tema)} // <-- Nuevo estilo de ícono
-            title={t('logout', 'Cerrar sesión')}
+          <CambioIdioma 
+            onChange={i18n.changeLanguage} 
+            defaultLang={i18n.language}
+            direction="down" 
+          />
+          <CambioTema 
+            value={temaKey} 
+            onChange={k => {setTemaKey(k); localStorage.setItem(THEME_KEY, k);}} 
+            direction="down"
+          />
+          
+          <button 
+            style={style.iconButton(tema)} 
+            onClick={() => { logout(); window.location.hash='#/login'; }}
+            title={t('logout', 'Salir')}
           >
             <FaSignOutAlt />
-            {/* Quitamos el texto para que sea solo un ícono */}
           </button>
         </div>
       </div>
-      {/* ===== FIN ÁREA MODIFICADA ===== */}
 
       <div style={style.grid}>
-        {renderColumnaIzquierda()}
-        {renderColumnaDerecha()}
+        {renderCatalogo()}
+        {renderCuenta()}
       </div>
-
-      {/* ===== ELIMINADO ===== */}
-      {/* Ya no necesitamos el bottomControls */}
     </div>
   );
 }

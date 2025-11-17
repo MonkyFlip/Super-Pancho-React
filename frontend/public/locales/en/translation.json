@@ -1,6 +1,8 @@
 {
   "welcome": "Welcome to my application",
-  "productss": "Productos",
+  "productss": "products",
+  "searchProduct": "Search product...",
+  "noSearchResults": "No matching products found",
   "selectArea": "Select area:",
   "loadingAreas": "Loading areas...",
   "errorLoadingAreas": "Error loading areas",
