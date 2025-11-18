@@ -12,6 +12,7 @@ import DashboardC from './clientes/DashboardC';
 import DashboardP from './productos/DashboardP.jsx';
 import DashboardA from './areas/DashboardA';
 import DashboardT from './trabajadores/DashboardT';
+import BackupsView from './bd/backups.jsx';
 
 // Multimedia
 import ImagenesView from './multimedia/ImagenesView';
@@ -270,6 +271,10 @@ function Dashboard() {
   if (second === 'productos' || third === 'DashboardP') return renderSubModule(DashboardP);
   if (second === 'areas' || third === 'DashboardA') return renderSubModule(DashboardA);
   if (second === 'trabajadores' || third === 'DashboardT') return renderSubModule(DashboardT);
+
+  if (second === 'bd' && third === 'backups') {
+    return renderSubModule(BackupsView);
+  }
 
   // Multimedia routes
   if (second === 'multimedia') {

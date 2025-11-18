@@ -8,7 +8,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
-  timeout: 300000,
+  timeout: 600000,
 });
 
 /* ---------------------------
@@ -241,4 +241,13 @@ export const getProgreso = (params = {}) => api.get('/db/progreso', { params });
 /* ---------------------------
    Export default axios instance
    --------------------------- */
+/* ---------------------------
+   Backups (Base de Datos)
+   --------------------------- */
+export const generarBackup = () => api.post('/api/backups/generar');
+export const getBackups = () => api.get('/api/backups/listar');
+// Helper para construir la URL de descarga sin hacer petición axios (para window.open)
+export const getBackupDownloadUrl = (id) => `${API_BASE_URL}/api/backups/descargar/${id}`;
+
+
 export default api;

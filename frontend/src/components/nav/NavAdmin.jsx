@@ -323,14 +323,13 @@ const NavAdmin = ({ onNavigate, onLogout }) => {
               { label: t('reports.generalAnalysis'), path: '#/admin/spark/analisis', icon: <FaBook /> }
             ]}
           />
-
+ 
           <MenuGroup
             id="bd"
             icon={<FaDatabase />}
             label={t('nav.database')}
             items={[
-              { label: t('bd.backups'), path: '#/admin/bd/backups', icon: <FaFileExport /> },
-              { label: t('bd.import'), path: '#/admin/bd/importar', icon: <FaFileImport /> }
+              { label: t('bd.backups'), path: '#/admin/bd/backups', icon: <FaFileExport /> }
             ]}
           />
 
