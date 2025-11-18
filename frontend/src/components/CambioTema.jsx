@@ -7,13 +7,16 @@ const CambioTema = ({
   value, 
   onChange, 
   align = 'left', 
-  direction = 'up' // Cambiado de 'down' a 'up' por defecto
+  direction = 'up'
 }) => {
   const themeKeys = Object.keys(temas);
   const [open, setOpen] = useState(false);
+
   const [selected, setSelected] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) || value || 'bosque_claro'; } catch { return value || 'bosque_claro'; }
+    try { return localStorage.getItem(STORAGE_KEY) || value || 'bosque_claro'; } 
+    catch { return value || 'bosque_claro'; }
   });
+
   const rootRef = useRef(null);
   const popRef = useRef(null);
 
@@ -22,67 +25,66 @@ const CambioTema = ({
     if (typeof onChange === 'function') onChange(selected);
   }, [selected, onChange]);
 
-  useEffect(() => { if (value && value !== selected) setSelected(value); }, [value]);
+  useEffect(() => {
+    if (value && value !== selected) setSelected(value);
+  }, [value]);
 
   useEffect(() => {
-    const onDown = (e) => { 
-      if (!rootRef.current) return; 
-      if (!rootRef.current.contains(e.target)) setOpen(false); 
+    const onDown = (e) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target)) setOpen(false);
     };
     const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+
     window.addEventListener('pointerdown', onDown);
     window.addEventListener('keydown', onKey);
+
     return () => {
       window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('keydown', onKey);
     };
   }, []);
 
+  // 📌 BOTÓN SIN CAMBIOS (38x38)
   const btnStyle = {
     display: 'inline-grid',
     placeItems: 'center',
-    width: 38, // Reducido para coincidir con iconButton
-    height: 38, // Reducido para coincidir con iconButton
-    borderRadius: '50%', // Cambiado a circular como iconButton
+    width: 38,
+    height: 38,
+    borderRadius: '50%',
     border: 'none',
     cursor: 'pointer',
     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      transform: 'translateY(-1px)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-    }
+    transition: 'all 0.2s ease'
   };
 
-  const handleSelect = (key) => {
-    setSelected(key);
-    setOpen(false);
-  };
-
-  // Estilos del popover corregidos
+  // 📌 POPOVER MÁS PEQUEÑO PERO NO EL BOTÓN
   const popoverBaseStyle = {
     position: 'absolute',
-    [align]: 0,
-    width: 280, // Reducido ligeramente
+    width: 200,
     background: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
-    boxShadow: '0 8px 32px rgba(16,24,40,0.12)',
+    borderRadius: 10,
+    padding: 8,
+    boxShadow: '0 6px 24px rgba(16,24,40,0.12)',
     border: '1px solid rgba(16,24,40,0.08)',
     pointerEvents: open ? 'auto' : 'none',
     opacity: open ? 1 : 0,
-    transition: 'all 0.2s ease',
+    transition: 'all 0.15s ease',
     zIndex: 1000
   };
 
+  // 📌 NUEVA LÓGICA DE POSICIÓN:
+  // direction = "down" → se abre ABAJO y A LA IZQUIERDA
   const directionStyles = {
     up: {
-      bottom: 'calc(100% + 8px)',
-      transform: open ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.95)',
+      bottom: 'calc(100% + 6px)',
+      left: 0,
+      transform: open ? 'translateY(0)' : 'translateY(6px)'
     },
     down: {
-      top: 'calc(100% + 8px)',
-      transform: open ? 'translateY(0) scale(1)' : 'translateY(-8px) scale(0.95)',
+      top: 'calc(100% + 6px)',
+      right: 0, // se despliega a la izquierda del botón
+      transform: open ? 'translateY(0)' : 'translateY(-6px)'
     }
   };
 
@@ -91,20 +93,36 @@ const CambioTema = ({
     ...directionStyles[direction]
   };
 
+  const themeCardStyle = (active, t) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    padding: 6,
+    borderRadius: 6,
+    cursor: 'pointer',
+    background: active ? `${t.primario}18` : '#f2f2f2',
+    border: active ? `2px solid ${t.primario}` : '1px solid #ddd',
+    transition: 'all 0.15s ease'
+  });
+
+  const handleSelect = (key) => {
+    setSelected(key);
+    setOpen(false);
+  };
+
   return (
-    <div ref={rootRef} style={{ 
-      position: 'relative', 
-      display: 'inline-block',
-    }}>
+    <div ref={rootRef} style={{ position: 'relative', display: 'inline-block' }}>
+      
+      {/* Botón */}
       <button
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen(o => !o)}
         title="Cambiar tema"
         style={{ 
-          ...btnStyle, 
-          background: temas[selected].primario, 
-          color: '#fff',
+          ...btnStyle,
+          background: temas[selected].primario,
+          color: '#fff'
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -112,6 +130,7 @@ const CambioTema = ({
         </svg>
       </button>
 
+      {/* Popover */}
       <div
         ref={popRef}
         role="dialog"
@@ -120,26 +139,28 @@ const CambioTema = ({
       >
         <div style={{ 
           display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          marginBottom: 12 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6
         }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#111' }}>Temas</div>
-          <div style={{ fontSize: 12, color: '#666' }}>{themeKeys.length} opciones</div>
+          <div style={{ fontWeight: 700, fontSize: 12 }}>Temas</div>
+          <div style={{ fontSize: 11, color: '#666' }}>{themeKeys.length}</div>
         </div>
 
+        {/* Lista */}
         <div
           role="listbox"
           aria-label="Selector de temas"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
-            gap: 8
+            gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
+            gap: 6
           }}
         >
           {themeKeys.map((key) => {
             const t = temas[key];
             const active = key === selected;
+
             return (
               <div
                 key={key}
@@ -147,41 +168,13 @@ const CambioTema = ({
                 tabIndex={0}
                 aria-selected={active}
                 onClick={() => handleSelect(key)}
-                onKeyDown={(e) => { 
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleSelect(key);
-                  }
-                }}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
-                  padding: 8,
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  background: active ? `${t.primario}15` : '#f8f9fa',
-                  border: active ? `2px solid ${t.primario}` : '1px solid #e9ecef',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(ev) => { 
-                  if (!active) {
-                    ev.currentTarget.style.background = `${t.primario}08`;
-                    ev.currentTarget.style.transform = 'translateY(-1px)';
-                  }
-                }}
-                onMouseLeave={(ev) => { 
-                  if (!active) {
-                    ev.currentTarget.style.background = '#f8f9fa';
-                    ev.currentTarget.style.transform = 'translateY(0)';
-                  }
-                }}
+                style={themeCardStyle(active, t)}
               >
                 <div style={{ 
-                  height: 32, 
-                  borderRadius: 6, 
-                  overflow: 'hidden', 
-                  border: '1px solid rgba(0,0,0,0.05)' 
+                  height: 24,
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  border: '1px solid rgba(0,0,0,0.05)'
                 }}>
                   <div style={{
                     width: '100%',
@@ -190,39 +183,38 @@ const CambioTema = ({
                   }} />
                 </div>
 
-                <div style={{ 
+                <div style={{
                   display: 'flex', 
-                  alignItems: 'center', 
                   justifyContent: 'space-between',
-                  gap: 4 
+                  alignItems: 'center'
                 }}>
                   <div style={{ 
-                    fontSize: 12, 
-                    fontWeight: 600, 
-                    color: '#111',
+                    fontSize: 11,
+                    fontWeight: 600,
                     textTransform: 'capitalize'
                   }}>
                     {t.nombre.replace('_', ' ')}
                   </div>
+
                   <div style={{ display: 'flex', gap: 3 }}>
-                    <div style={{ 
-                      width: 10, 
-                      height: 10, 
-                      borderRadius: 3, 
-                      background: t.primario 
+                    <div style={{
+                      width: 8, height: 8,
+                      borderRadius: 3,
+                      background: t.primario
                     }} />
-                    <div style={{ 
-                      width: 10, 
-                      height: 10, 
-                      borderRadius: 3, 
-                      background: t.secundario 
+                    <div style={{
+                      width: 8, height: 8,
+                      borderRadius: 3,
+                      background: t.secundario
                     }} />
                   </div>
                 </div>
+
               </div>
             );
           })}
         </div>
+
       </div>
     </div>
   );
