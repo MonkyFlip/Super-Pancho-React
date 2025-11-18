@@ -2,6 +2,7 @@
 import os
 import logging
 import json
+import threading
 from flask import Blueprint, request, make_response, current_app
 from bson import json_util
 from bson.objectid import ObjectId, InvalidId
@@ -12,7 +13,7 @@ from jwt import ImmatureSignatureError, ExpiredSignatureError, InvalidTokenError
 
 # Imports internos que usan las rutas
 from db.conexion import get_db
-from controllers.db.crear_db_controller import crear_y_poblar_db
+from controllers.db.crear_db_controller import crear_y_poblar_db, ProgressMonitor
 from controllers.login.login_controller import login_user, AuthError, JWT_SECRET, JWT_ALGO
 
 # --- Blueprint ---
@@ -36,6 +37,12 @@ def _serialize_for_json(obj):
             return json.loads(json.dumps(obj))
         except Exception:
             return str(obj)
+
+# -----------------------
+# Variables para control de background job
+# -----------------------
+_crear_db_thread = None
+_crear_db_lock = threading.Lock()
 
 # -----------------------
 # Rutas (ahora con @main_bp.route)
@@ -144,9 +151,30 @@ def verifica_db():
 
 @main_bp.route('/crear_db', methods=['POST'])
 def crear_db():
+    """
+    Inicia el proceso de creación y poblamiento en background.
+    Devuelve totals inmediatamente para que el frontend pueda iniciar polling.
+    Si ya hay un proceso en ejecución, devuelve 409 con los totals actuales.
+    """
+    global _crear_db_thread
     try:
-        resumen = crear_y_poblar_db(get_db)
-        return {"ok": True, "mensaje": "Base creada y poblada.", "resumen": resumen}, 200
+        with _crear_db_lock:
+            if _crear_db_thread and _crear_db_thread.is_alive():
+                totals = ProgressMonitor.counts_from_config()
+                return {"ok": False, "mensaje": "Proceso ya en ejecución", "totals": totals}, 409
+
+            def _worker():
+                try:
+                    crear_y_poblar_db(get_db)
+                except Exception as e:
+                    logger.exception("Error en background crear_db: %s", e)
+
+            _crear_db_thread = threading.Thread(target=_worker, daemon=True, name="crear_db_worker")
+            _crear_db_thread.start()
+
+            totals = ProgressMonitor.counts_from_config()
+            return {"ok": True, "mensaje": "Proceso iniciado", "totals": totals}, 202
+
     except Exception as e:
         logger.exception("Error en /crear_db: %s", e)
         return {"error": str(e)}, 500
@@ -202,4 +230,23 @@ def ver_archivo_multimedia(file_id):
         return {"error": "Archivo no encontrado"}, 404
     except Exception as e:
         logger.exception("Error en /multimedia/archivo/%s: %s", file_id, e)
+        return {"error": str(e)}, 500
+
+# -----------------------
+# Endpoint: progreso de poblamiento y multimedia
+# -----------------------
+@main_bp.route('/db/progreso', methods=['GET'])
+def db_progreso():
+    try:
+        db = get_db()
+        if db is None:
+            return {"error": "DB no disponible"}, 500
+
+        # Usamos la clase ProgressMonitor definida en crear_db_controller.py
+        snapshot = ProgressMonitor.snapshot(db)
+
+        # Devolvemos counts, current, status y message tal como espera el frontend
+        return snapshot, 200
+    except Exception as e:
+        logger.exception("Error en /db/progreso: %s", e)
         return {"error": str(e)}, 500

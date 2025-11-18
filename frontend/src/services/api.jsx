@@ -234,6 +234,11 @@ export const ventasRegresionSimple = (body = {}) => api.post('/regresion/simple'
 export const ventasRegresionMultiple = (body = {}) => api.post('/regresion/multiple', body);
 
 /* ---------------------------
+   Estado de poblamiento / multimedia
+   --------------------------- */
+export const getProgreso = (params = {}) => api.get('/db/progreso', { params });
+
+/* ---------------------------
    Export default axios instance
    --------------------------- */
 export default api;

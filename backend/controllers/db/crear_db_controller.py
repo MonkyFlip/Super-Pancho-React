@@ -731,6 +731,91 @@ def crear_y_poblar_db(get_db_callable: Callable[[], Any]) -> Dict[str, Any]:
     return result
 
 # ---------------------------------------------
+# MONITOR DE PROGRESO (para /db/progreso)
+# ---------------------------------------------
+class ProgressMonitor:
+    @staticmethod
+    def counts_from_config() -> Dict[str, int]:
+        """Totales esperados por etapa, tomados de CONFIG_REGISTROS."""
+        return {
+            "populate": sum([
+                CONFIG_REGISTROS.get("usuarios", 0),
+                CONFIG_REGISTROS.get("areas", 0),
+                CONFIG_REGISTROS.get("productos", 0),
+                CONFIG_REGISTROS.get("clientes", 0),
+                CONFIG_REGISTROS.get("ventas", 0),
+                CONFIG_REGISTROS.get("logs", 0),
+            ]),
+            "imagenes_color": CONFIG_REGISTROS.get("imagenes_color", 0),
+            "fotos_ruido": CONFIG_REGISTROS.get("fotos_ruido", 0),
+            "videos": CONFIG_REGISTROS.get("videos", 0),
+        }
+
+    @staticmethod
+    def current_from_db(db) -> Dict[str, int]:
+        """Conteos actuales por etapa, leyendo colecciones y GridFS."""
+        # Población: suma de documentos en colecciones principales
+        current_populate = 0
+        for col in _colecciones_necesarias():
+            try:
+                current_populate += int(db[col].estimated_document_count())
+            except Exception:
+                current_populate += int(db[col].count_documents({}))
+
+        # Multimedia (GridFS): contar por 'tipo'
+        current_imagenes = 0
+        current_fotos = 0
+        current_videos = 0
+        try:
+            files = db["multimedia.files"]
+            current_imagenes = int(files.count_documents({"tipo": "imagen"}))
+            current_fotos = int(files.count_documents({"tipo": "foto"}))
+            current_videos = int(files.count_documents({"tipo": "video"}))
+        except Exception:
+            # Si aún no existen colecciones de GridFS, quedan en 0
+            pass
+
+        return {
+            "populate": current_populate,
+            "imagenes_color": current_imagenes,
+            "fotos_ruido": current_fotos,
+            "videos": current_videos,
+        }
+
+    @staticmethod
+    def status(counts: Dict[str, int], current: Dict[str, int]) -> Dict[str, str]:
+        """Estado por etapa."""
+        def stage_status(cur: int, tot: int) -> str:
+            if tot <= 0:
+                return "idle"
+            if cur >= tot:
+                return "done"
+            return "running"
+
+        return {
+            "populate": stage_status(current.get("populate", 0), counts.get("populate", 0)),
+            "imagenes_color": stage_status(current.get("imagenes_color", 0), counts.get("imagenes_color", 0)),
+            "fotos_ruido": stage_status(current.get("fotos_ruido", 0), counts.get("fotos_ruido", 0)),
+            "videos": stage_status(current.get("videos", 0), counts.get("videos", 0)),
+        }
+
+    @staticmethod
+    def snapshot(db) -> Dict[str, Dict[str, int]]:
+        """Devuelve el paquete completo para el endpoint."""
+        counts = ProgressMonitor.counts_from_config()
+        current = ProgressMonitor.current_from_db(db)
+        status = ProgressMonitor.status(counts, current)
+        message = "Procesando…"
+        if all(s == "done" for s in status.values()):
+            message = "Proceso completado"
+        return {
+            "counts": counts,
+            "current": current,
+            "status": status,
+            "message": message
+        }
+
+# ---------------------------------------------
 # EJEMPLO DE CÓMO LLAMARLO
 # ---------------------------------------------
 # (No incluido en el script final, solo como ejemplo)

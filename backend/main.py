@@ -107,7 +107,7 @@ if __name__ == "__main__":
         debug = os.environ.get("FLASK_DEBUG", "1") == "1"
         print(f"🌐 API unificada disponible en http://localhost:{port}")
         print(f"   -> Spark en /api/analisis")
-        app.run(host='0.0.0.0', port=port, debug=debug)
+        app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)
     except Exception as e:
         print(f"❌ No se pudo iniciar la aplicación: {e}")
         stop_spark()
