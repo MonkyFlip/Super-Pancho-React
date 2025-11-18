@@ -42,7 +42,12 @@
     "reports": "RELATÓRIOS",
     "database": "BANCO DE DADOS",
     "multimedia": "MULTIMÍDIA",
-    "logout": "Sair"
+    "logout": "Sair",
+    "products": "Produtos",
+    "promos": "Promoções",
+    "locations": "Lojas",
+    "about": "Sobre Nós",
+    "contact": "Contato"
   },
   "cruds": {
     "users": "Usuários",
@@ -212,7 +217,10 @@
       "refreshTooltip": "Atualizar lista",
       "refreshButton": "Atualizar",
       "addTooltip": "Adicionar produto",
-      "addButton": "Novo"
+      "addButton": "Novo",
+      "title": "Catálogo de Produtos",
+    "all": "Todos",
+    "noProducts": "Não encontramos produtos nesta categoria."
     },
     "table": {
       "actions": {
@@ -485,5 +493,48 @@
         "clothing": "Roupas"
       }
     }
+  },
+  "clientPortal": {
+    "title": "Portal do Cliente"
+  },
+  "home": {
+    "welcome": "Bem-vindo à SuperTech",
+    "subtitle": "A melhor tecnologia e produtos frescos em um só lugar."
+  },
+  "promos": {
+    "title": "Promoções Especiais",
+    "spark": "RECOMENDADO INSIGHT"
+  },
+  "locations": {
+    "title": "Nossas Lojas"
+  },
+  "about": {
+    "title": "Sobre Nós",
+    "p1": "SuperTech é líder em soluções de varejo integrando a melhor tecnologia..."
+  },
+  "contact": {
+    "title": "Contato",
+    "name": "Seu Nome",
+    "email": "Seu Email",
+    "message": "Sua Mensagem...",
+    "send": "Enviar Mensagem"
+  },
+  "login": "Entrar",
+  "footer": {
+    "text": "SuperTech S.A. de C.V. © 2025. Todos os direitos reservados."
+  },
+  "loading": "Carregando catálogo da SuperTech...",
+  "categories": {
+    "fruitsVegetables": "Frutas e Legumes",
+    "meatsFish": "Carnes e Peixes",
+    "dairy": "Laticínios e Ovos",
+    "bakery": "Padaria",
+    "beverages": "Bebidas",
+    "frozen": "Congelados",
+    "personalCare": "Cuidados Pessoais",
+    "cleaning": "Limpeza",
+    "pets": "Pets",
+    "electronics": "Eletrônicos",
+    "groceries": "Mercearia"
   }
 }

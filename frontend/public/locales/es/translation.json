@@ -42,7 +42,12 @@
     "reports": "REPORTES",
     "database": "BASE DE DATOS",
     "multimedia": "MULTIMEDIA",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "products": "Productos",
+    "promos": "Promociones",
+    "locations": "Sucursales",
+    "about": "Nosotros",
+    "contact": "Contacto"
   },
   "cruds": {
     "users": "Usuarios",
@@ -212,7 +217,10 @@
       "refreshTooltip": "Actualizar lista",
       "refreshButton": "Actualizar",
       "addTooltip": "Agregar producto",
-      "addButton": "Nuevo"
+      "addButton": "Nuevo",
+      "title": "Catálogo de Productos",
+    "all": "Todos",
+    "noProducts": "No encontramos productos en esta categoría."
     },
     "table": {
       "actions": {
@@ -485,5 +493,48 @@
         "clothing": "Ropa"
       }
     }
+  },
+  "clientPortal": {
+    "title": "Portal del Cliente"
+  },
+  "home": {
+    "welcome": "Bienvenido a SuperTech",
+    "subtitle": "La mejor tecnología y productos frescos en un solo lugar."
+  },
+  "promos": {
+    "title": "Promociones Especiales",
+    "spark": "RECOMENDACIÓN INSIGHT"
+  },
+  "locations": {
+    "title": "Nuestras Sucursales"
+  },
+  "about": {
+    "title": "Sobre Nosotros",
+    "p1": "SuperTech es líder en soluciones minoristas integrando la mejor tecnología..."
+  },
+  "contact": {
+    "title": "Contacto",
+    "name": "Tu Nombre",
+    "email": "Tu Correo",
+    "message": "Tu Mensaje...",
+    "send": "Enviar Mensaje"
+  },
+  "login": "Iniciar sesión",
+  "footer": {
+    "text": "SuperTech S.A. de C.V. © 2025. Todos los derechos reservados."
+  },
+  "loading": "Cargando catálogo de SuperTech...",
+  "categories": {
+    "fruitsVegetables": "Frutas y Verduras",
+    "meatsFish": "Carnes y Pescados",
+    "dairy": "Lácteos y Huevos",
+    "bakery": "Panadería",
+    "beverages": "Bebidas",
+    "frozen": "Congelados",
+    "personalCare": "Cuidado Personal",
+    "cleaning": "Limpieza",
+    "pets": "Mascotas",
+    "electronics": "Electrónicos",
+    "groceries": "Abarrotes"
   }
 }

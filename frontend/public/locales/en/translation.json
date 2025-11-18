@@ -42,7 +42,12 @@
     "reports": "REPORTS",
     "database": "DATABASE",
     "multimedia": "MULTIMEDIA",
-    "logout": "Log Out"
+    "logout": "Log Out",
+    "products": "Products",
+    "promos": "Promotions",
+    "locations": "Locations",
+    "about": "About Us",
+    "contact": "Contact"
   },
   "cruds": {
     "users": "Users",
@@ -212,7 +217,10 @@
       "refreshTooltip": "Refresh list",
       "refreshButton": "Refresh",
       "addTooltip": "Add product",
-      "addButton": "New"
+      "addButton": "New",
+      "title": "Product Catalog",
+    "all": "All",
+    "noProducts": "No products found in this category."
     },
     "table": {
       "actions": {
@@ -492,5 +500,48 @@
         "clothing": "Clothing"
       }
     }
+  },
+  "clientPortal": {
+    "title": "Customer Portal"
+  },
+  "home": {
+    "welcome": "Welcome to SuperTech",
+    "subtitle": "The best technology and fresh products in one place."
+  },
+  "promos": {
+    "title": "Special Promotions",
+    "spark": "INSIGHT RECOMMENDED"
+  },
+  "locations": {
+    "title": "Our Locations"
+  },
+  "about": {
+    "title": "About Us",
+    "p1": "SuperTech is a leader in retail solutions integrating the best technology..."
+  },
+  "contact": {
+    "title": "Contact",
+    "name": "Your Name",
+    "email": "Your Email",
+    "message": "Your Message...",
+    "send": "Send Message"
+  },
+  "login": "Log in",
+  "footer": {
+    "text": "SuperTech S.A. de C.V. © 2025. All rights reserved."
+  },
+  "loading": "Loading SuperTech catalog...",
+  "categories": {
+    "fruitsVegetables": "Fruits & Vegetables",
+    "meatsFish": "Meats & Fish",
+    "dairy": "Dairy & Eggs",
+    "bakery": "Bakery",
+    "beverages": "Beverages",
+    "frozen": "Frozen Foods",
+    "personalCare": "Personal Care",
+    "cleaning": "Cleaning",
+    "pets": "Pets",
+    "electronics": "Electronics",
+    "groceries": "Groceries"
   }
 }
