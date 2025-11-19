@@ -6,7 +6,7 @@ from db.conexion import get_db
 
 # Import CRUD core
 from .create import create_user, UserError as CreateUserError
-from .read import get_user_by_id, list_users, get_user_by_key, UserError as ReadUserError
+from .read import get_user_by_id, list_users, get_user_by_key, count_users, UserError as ReadUserError
 from .update import update_user, UserError as UpdateUserError
 from .delete import delete_user, UserError as DeleteUserError
 
@@ -26,14 +26,23 @@ def crear_usuario():
         return {"ok": False, "error": str(e)}, 500
 
 
-# ✅ LIST
+# ✅ LIST (MODIFICADO)
 @usuarios_bp.route("", methods=["GET"])
 def listar_usuarios():
     try:
         limit = int(request.args.get("limit", 100))
         skip = int(request.args.get("skip", 0))
-        res = list_users(get_db, limit=limit, skip=skip)
-        return {"ok": True, "data": res}, 200
+        # 1. Leer búsqueda
+        search = request.args.get("search", None) 
+
+        # 2. Obtener lista filtrada
+        docs = list_users(get_db, limit=limit, skip=skip, search=search)
+        
+        # 3. Obtener conteo total filtrado (para paginador)
+        total = count_users(get_db, search=search)
+
+        # 4. Retornar estructura con 'docs' y 'count'
+        return {"ok": True, "data": {"docs": docs, "count": total}}, 200
     except Exception as e:
         return {"ok": False, "error": str(e)}, 500
 

@@ -1,6 +1,5 @@
 from db.conexion import get_db
 from pymongo import ReturnDocument
-from db.conexion import get_db
 
 class AreaModel:
     def __init__(self):
@@ -28,17 +27,27 @@ class AreaModel:
     def get_areas(self):
         return list(self.collection.find())
 
-    # Obtener paginadas
-    def get_areas_paginated(self, page, limit):
+    # ✅ CORREGIDO: Ahora acepta 'search' y aplica filtro
+    def get_areas_paginated(self, page, limit, search=None):
         skip = (page - 1) * limit
-        data = list(self.collection.find().skip(skip).limit(limit))
-        total = self.collection.count_documents({})
+        
+        # 1. Crear filtro vacío
+        filtro = {}
+        
+        # 2. Si hay texto de búsqueda, filtrar por nombre (insensible a mayúsculas)
+        if search:
+            filtro["nombre"] = {"$regex": search, "$options": "i"}
+
+        # 3. Aplicar el filtro tanto a la búsqueda (.find) como al conteo (.count_documents)
+        data = list(self.collection.find(filtro).skip(skip).limit(limit))
+        total = self.collection.count_documents(filtro)
+        
         return {
             "data": data,
             "total": total,
             "page": page,
             "limit": limit,
-            "total_pages": (total + limit - 1) // limit
+            "total_pages": (total + limit - 1) // limit if limit > 0 else 0
         }
 
     # Obtener por ID

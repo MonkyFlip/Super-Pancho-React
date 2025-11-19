@@ -20,13 +20,18 @@ def create_area():
         "id": data["_id"]
     }), 201
 
-# READ ALL (with pagination)
+# ✅ READ ALL (MODIFICADO PARA BÚSQUEDA)
 @areas_bp.route("/areas", methods=["GET"], endpoint="areas_list")
 def get_areas():
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=10, type=int)
+    
+    # 1. Capturar parámetro de búsqueda
+    search = request.args.get("search", None)
 
-    result = area_model.get_areas_paginated(page, limit)
+    # 2. Pasarlo al modelo (Asegúrate de actualizar tu model para aceptar 'search')
+    result = area_model.get_areas_paginated(page, limit, search=search)
+    
     return dumps(result), 200
 
 

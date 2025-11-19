@@ -6,39 +6,40 @@ productos_bp = Blueprint("productos", __name__)
 producto_model = ProductoModel()
 
 
-# GET ALL
+# GET ALL (Con Filtro de Área y Búsqueda por Nombre)
 @productos_bp.route("/productos", methods=["GET"])
 def obtener_productos():
     try:
         page = int(request.args.get("page", 1))
         limit = int(request.args.get("limit", 10))
         
-        # --- LÓGICA DE FILTRO AÑADIDA ---
-        # 1. Lee el parámetro 'area' (que debería ser un ID)
+        # 1. Leer parámetros de filtro
         area_id_str = request.args.get("area", None)
+        search_query = request.args.get("search", None)  # <--- NUEVO: Capturamos la búsqueda
         
-        # 2. Prepara el diccionario de filtro
+        # 2. Preparar diccionario de filtro
         filtro = {}
         
-        # 3. Si se proporcionó un ID de área, úsalo
+        # 3. Lógica de Área
         if area_id_str:
             try:
-                # Tu JSON de ejemplo muestra "area_id": 1 (entero)
                 filtro["area_id"] = int(area_id_str)
             except ValueError:
                 return jsonify({"error": "El ID del área debe ser un número entero"}), 400
-        # --- FIN DE LA LÓGICA DE FILTRO ---
+
+        # 4. Lógica de Búsqueda (NUEVO)
+        if search_query:
+            # Busca cualquier coincidencia en el nombre, ignorando mayúsculas/minúsculas
+            filtro["nombre"] = {"$regex": search_query, "$options": "i"}
 
         if page < 1 or limit < 1:
             return jsonify({"error": "page y limit deben ser mayores a 0"}), 400
 
         skip = (page - 1) * limit
 
-        # --- CAMBIO AQUÍ ---
-        # 4. Pasa el 'filtro' a los métodos del modelo
+        # 5. Pasa el 'filtro' completo al modelo
         productos = producto_model.get_all_paginated(skip, limit, filtro=filtro)
         total = producto_model.count(filtro=filtro)
-        # --- FIN CAMBIO ---
 
         response = {
             "total": total,
@@ -52,7 +53,6 @@ def obtener_productos():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 
 # GET ONE
