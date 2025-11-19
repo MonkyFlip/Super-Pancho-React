@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { FaDatabase, FaCloudDownloadAlt, FaHistory, FaSpinner, FaFileArchive, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 // Importamos las funciones nombradas desde tu api.jsx
 import { generarBackup, getBackups, getBackupDownloadUrl } from '../../../services/api';
 
 const BackupsView = () => {
+  const { t } = useTranslation();
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -42,13 +44,13 @@ const BackupsView = () => {
       if (res.data.ok) {
         // Refrescamos la lista
         fetchBackups();
-        alert("Backup creado correctamente.");
+        alert(t('bd.backupCreated', 'Backup creado correctamente.'));
       }
     } catch (error) {
       console.error(error);
       // Capturamos mensaje del backend si existe
       const serverMessage = error.response?.data?.message || error.message;
-      setErrorMsg(`Error: ${serverMessage}`);
+      setErrorMsg(t('bd.backupError', 'Error: {{message}}', { message: serverMessage }));
     } finally {
       setCreating(false);
       // Ocultar mensaje informativo después de un tiempo
@@ -76,7 +78,7 @@ const BackupsView = () => {
     <div style={{ padding: '20px' }}>
       <h2 style={{ borderBottom: '2px solid #ccc', paddingBottom: '10px', color: '#333' }}>
         <FaDatabase style={{ marginRight: '10px' }} />
-        Copias de Seguridad
+        {t('bd.backupsTitle', 'Copias de Seguridad')}
       </h2>
       
       {/* Mensaje de error visual */}
@@ -101,9 +103,9 @@ const BackupsView = () => {
         }}>
           <FaInfoCircle /> 
           <div>
-            <strong>Generando backup...</strong>
+            <strong>{t('bd.generatingBackup', 'Generando backup...')}</strong>
             <div style={{ fontSize: '0.9rem', marginTop: '4px' }}>
-              Esta acción puede tardar varios minutos. Por favor, no cierre esta ventana.
+              {t('bd.backupWarning', 'Esta acción puede tardar varios minutos. Por favor, no cierre esta ventana.')}
             </div>
           </div>
         </div>
@@ -128,19 +130,19 @@ const BackupsView = () => {
             }}
           >
               {creating ? <FaSpinner className="icon-spin" /> : <FaCloudDownloadAlt />} 
-              {creating ? 'Generando Backup...' : 'Generar Nuevo Backup'}
+              {creating ? t('bd.creatingBackup', 'Generando Backup...') : t('bd.createNewBackup', 'Generar Nuevo Backup')}
           </button>
       </div>
 
       <div style={{ padding: '20px', background: '#fff', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#555' }}>
-            <FaHistory /> Historial en la Nube
+            <FaHistory /> {t('bd.cloudHistory', 'Historial en la Nube')}
         </h3>
         
         {loading ? (
-            <p>Cargando historial...</p>
+            <p>{t('bd.loadingHistory', 'Cargando historial...')}</p>
         ) : backups.length === 0 ? (
-            <p style={{ color: '#888', fontStyle: 'italic' }}>No hay backups disponibles.</p>
+            <p style={{ color: '#888', fontStyle: 'italic' }}>{t('bd.noBackupsAvailable', 'No hay backups disponibles.')}</p>
         ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px' }}>
                 {backups.map((bk) => (
@@ -174,7 +176,7 @@ const BackupsView = () => {
                                 fontWeight: 'bold'
                             }}
                         >
-                            Descargar
+                            {t('bd.download', 'Descargar')}
                         </button>
                     </div>
                 ))}
