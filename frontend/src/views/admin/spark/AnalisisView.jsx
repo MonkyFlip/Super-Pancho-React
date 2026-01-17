@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-
 // --- Componentes de UI ---
 
 /**
  * Una tarjeta reutilizable para mostrar un indicador (KPI).
+ * NOTA: Agregué la prop 'className' para que funcione el estilo 'highlight-card'.
  */
-const StatCard = ({ title, value, description }) => (
-  <div className="stat-card">
+const StatCard = ({ title, value, description, className = "" }) => (
+  <div className={`stat-card ${className}`}>
     <h3>{title}</h3>
     <div className="value">{value}</div>
     {description && <p className="description">{description}</p>}
@@ -17,9 +17,6 @@ const StatCard = ({ title, value, description }) => (
 
 // --- Funciones de Utilidad ---
 
-/**
- * Formatea un número como moneda (USD).
- */
 const formatCurrency = (number) => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -29,9 +26,6 @@ const formatCurrency = (number) => {
   }).format(number);
 };
 
-/**
- * Formatea un número con separadores de miles.
- */
 const formatNumber = (number) => {
   return new Intl.NumberFormat("es-ES").format(number);
 };
@@ -60,19 +54,68 @@ const AnalisisView = () => {
       });
   }, []);
 
-  // --- Estados de Carga y Error ---
+  // --- Estados de Carga (Spinner Circular) ---
 
   if (loading) {
-    return <div className="loader-container">{t("analysisView.loading")}</div>;
+    return (
+      <div className="loader-container">
+        {/* Estilos específicos para la carga */}
+        <style>{`
+          .loader-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+            font-family: sans-serif;
+            color: #555;
+          }
+          /* Definición del Spinner Circular */
+          .spinner {
+            /* Aumentamos el grosor del borde para que coincida con el nuevo tamaño */
+            border: 6px solid #f3f3f3; 
+            border-top: 6px solid #3498db; 
+            border-radius: 50%;
+            /* Aumentamos el tamaño (antes 50px) */
+            width: 100px;
+            height: 100px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px; /* Un poco más de espacio debajo */
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+        
+        <div className="spinner"></div>
+        {/* Aumentamos un poco el tamaño de la fuente del texto de carga */}
+        <div style={{ fontSize: '1.1rem' }}>{t("analysisView.loading")}</div>
+      </div>
+    );
   }
 
+  // --- Estado de Error ---
+
   if (error) {
-  return (
-    <div className="error-container">
-      {t("analysisView.error")}: {error}
-    </div>
-  );
-}
+    return (
+      <div className="error-container">
+        {/* Estilos para error inline para asegurar que se vean */}
+        <style>{`
+          .error-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+            color: #d9534f;
+            font-family: sans-serif;
+            font-size: 1.2rem;
+          }
+        `}</style>
+        {t("analysisView.error")}: {error}
+      </div>
+    );
+  }
 
   // --- Renderizado del Dashboard ---
 
@@ -88,7 +131,7 @@ const AnalisisView = () => {
 
   return (
     <>
-      {/* --- Hoja de Estilos --- */}
+      {/* --- Hoja de Estilos Principal --- */}
       <style>
         {`
           .analisis-container {
@@ -97,19 +140,6 @@ const AnalisisView = () => {
             padding: 24px;
             max-width: 1400px;
             margin: 0 auto;
-          }
-          
-          .loader-container, .error-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 80vh;
-            font-size: 1.2rem;
-            color: #555;
-          }
-          
-          .error-container {
-            color: #d9534f;
           }
 
           .header {
@@ -167,12 +197,13 @@ const AnalisisView = () => {
             margin: 4px 0 0 0;
           }
 
-          .highlight-card {
-            background-color: #f0f9ff; /* Un fondo azulado claro */
+          /* Estilos para tarjeta destacada */
+          .stat-card.highlight-card {
+            background-color: #f0f9ff;
             border: 1px solid #b3e0ff;
           }
           
-          .highlight-card .value {
+          .stat-card.highlight-card .value {
             color: #005a9e;
           }
 
@@ -188,7 +219,7 @@ const AnalisisView = () => {
             padding: 24px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             border: 1px solid #e2e8f0;
-            overflow-x: auto; /* Para responsividad en tablas */
+            overflow-x: auto;
           }
           
           .table-container h2 {
@@ -226,7 +257,6 @@ const AnalisisView = () => {
             color: #2d3748;
           }
 
-          /* --- Responsividad --- */
           @media (max-width: 992px) {
             .tables-grid {
               grid-template-columns: 1fr;
@@ -242,7 +272,7 @@ const AnalisisView = () => {
               text-align: left;
             }
             .kpi-grid {
-              grid-template-columns: 1fr 1fr; /* 2 columnas en móvil */
+              grid-template-columns: 1fr 1fr;
             }
             .stat-card .value {
               font-size: 1.5rem;
@@ -254,62 +284,60 @@ const AnalisisView = () => {
       {/* --- Contenido del Dashboard --- */}
       <div className="analisis-container">
         <header className="header">
-  <h1>{t("analysisView.title")}</h1>
+          <h1>{t("analysisView.title")}</h1>
 
-  <div className="sub-header">
-    {t("analysisView.dateRange", {
-      from: rango.desde,
-      to: rango.hasta,
-    })}
-    <br />
-    {t("analysisView.generatedAt", {
-      date: new Date(fecha_analisis).toLocaleString(),
-    })}
-  </div>
-</header>
+          <div className="sub-header">
+            {t("analysisView.dateRange", {
+              from: rango.desde,
+              to: rango.hasta,
+            })}
+            <br />
+            {t("analysisView.generatedAt", {
+              date: new Date(fecha_analisis).toLocaleString(),
+            })}
+          </div>
+        </header>
 
         {/* --- KPIs Principales --- */}
         <div className="kpi-grid">
-  <StatCard
-    title={t("analysisView.kpis.incomeTotal")}
-    value={formatCurrency(stats.ingresos_totales)}
-  />
-  <StatCard
-    title={t("analysisView.kpis.salesTotal")}
-    value={formatNumber(stats.total_ventas)}
-  />
-  <StatCard
-    title={t("analysisView.kpis.ticketAverage")}
-    value={formatCurrency(promedios.venta_promedio)}
-  />
-  <StatCard
-    title={t("analysisView.kpis.salesPerDay")}
-    value={formatNumber(promedios.ventas_por_dia.toFixed(0))}
-  />
-  <StatCard
-    title={t("analysisView.kpis.maxSale")}
-    value={formatCurrency(stats.venta_maxima)}
-  />
-  <StatCard
-    title={t("analysisView.kpis.minSale")}
-    value={formatCurrency(stats.venta_minima)}
-  />
-</div>
-
+          <StatCard
+            title={t("analysisView.kpis.incomeTotal")}
+            value={formatCurrency(stats.ingresos_totales)}
+          />
+          <StatCard
+            title={t("analysisView.kpis.salesTotal")}
+            value={formatNumber(stats.total_ventas)}
+          />
+          <StatCard
+            title={t("analysisView.kpis.ticketAverage")}
+            value={formatCurrency(promedios.venta_promedio)}
+          />
+          <StatCard
+            title={t("analysisView.kpis.salesPerDay")}
+            value={formatNumber(promedios.ventas_por_dia.toFixed(0))}
+          />
+          <StatCard
+            title={t("analysisView.kpis.maxSale")}
+            value={formatCurrency(stats.venta_maxima)}
+          />
+          <StatCard
+            title={t("analysisView.kpis.minSale")}
+            value={formatCurrency(stats.venta_minima)}
+          />
+        </div>
 
         {/* --- Tarjeta Destacada: Día con Más Ventas --- */}
         <div className="kpi-grid">
-  <StatCard
-    title={t("analysisView.bestDay.title")}
-    value={formatCurrency(diaMax.total_vendido)}
-    description={t("analysisView.bestDay.description", {
-      date: diaMax.fecha,
-      count: formatNumber(diaMax.cantidad_ventas),
-    })}
-    className="highlight-card"
-  />
-</div>
-
+          <StatCard
+            title={t("analysisView.bestDay.title")}
+            value={formatCurrency(diaMax.total_vendido)}
+            description={t("analysisView.bestDay.description", {
+              date: diaMax.fecha,
+              count: formatNumber(diaMax.cantidad_ventas),
+            })}
+            className="highlight-card"
+          />
+        </div>
 
         {/* --- Tablas --- */}
         <div className="tables-grid">

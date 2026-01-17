@@ -13,6 +13,8 @@ const LoginView = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Mantenemos la lógica del tema
   const [themeKey] = useState(() => {
     try { return localStorage.getItem(THEME_KEY) || 'bosque_claro'; } catch { return 'bosque_claro'; }
   });
@@ -31,6 +33,7 @@ const LoginView = ({ onLoginSuccess }) => {
 
   const tema = temas[themeKey] || temas.bosque_claro;
 
+  // --- LÓGICA DE LOGIN (Sin cambios) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -51,43 +54,26 @@ const LoginView = ({ onLoginSuccess }) => {
       const res = await login(usuario, password);
       const body = res?.data ?? {};
 
-      // Normalizar token y usuario del body
       const token = body.token ?? body.accessToken ?? body.access_token ?? body.tokenJwt ?? body.jwt ?? null;
       const userFromBody = body.user ?? body.usuario ?? (Object.keys(body || {}).length ? body : null);
 
-      // Persistir token (setAuthToken guarda en localStorage y configura headers si está implementado)
       if (token) {
-        try {
-          setAuthToken(token);
-        } catch (err) {
-          try { localStorage.setItem('app_auth_token', token); } catch {}
-        }
+        try { setAuthToken(token); } catch (err) { try { localStorage.setItem('app_auth_token', token); } catch {} }
       }
 
-      // Persistir usuario en storage mediante helper storeUser si existe, y fallback manual
       if (userFromBody) {
-        try {
-          storeUser(userFromBody);
-        } catch (err) {
-          try { localStorage.setItem('app_auth_user', JSON.stringify(userFromBody)); } catch {}
-        }
+        try { storeUser(userFromBody); } catch (err) { try { localStorage.setItem('app_auth_user', JSON.stringify(userFromBody)); } catch {} }
       }
 
-      // Determinar expiresIn (segundos)
       const expires = body.expiresIn ?? body.expires_in ?? body.expires ?? null;
       const expiresInSec = typeof expires === 'number' ? expires : (typeof expires === 'string' && /^\d+$/.test(expires) ? Number(expires) : null);
 
-      // Guardar sesión centralizada (auth.js) para consistencia
       try {
         saveSession({ user: userFromBody, token, expiresInSec: expiresInSec ?? 3600 });
-      } catch (e) {
-        // fallback manual ya aplicado arriba si saveSession no existe o falla
-      }
+      } catch (e) {}
 
-      // Notificar a la app que cambió auth y evitar condición de carrera antes de redirigir
       window.dispatchEvent(new Event('auth:changed'));
       setTimeout(() => {
-        // Si backend sugiere redirect, usarlo; si no, inferir por rol
         const redirectPath = body.redirect;
         if (redirectPath) {
           window.location.hash = `#${redirectPath}`;
@@ -96,9 +82,7 @@ const LoginView = ({ onLoginSuccess }) => {
           const home = getHomeRouteForUser(finalUser) || '#/';
           window.location.hash = home;
         }
-        // notificar otra vez por si hay listeners que reaccionen tras el cambio de hash
         window.dispatchEvent(new Event('auth:changed'));
-
         if (typeof onLoginSuccess === 'function') {
           try { onLoginSuccess(body); } catch (e) { /* silent */ }
         }
@@ -125,124 +109,169 @@ const LoginView = ({ onLoginSuccess }) => {
     );
   }
 
+  // --- NUEVOS ESTILOS PARA DISEÑO SPLIT SCREEN ---
+  
+  const layoutStyle = {
+    display: 'flex',
+    width: '100vw',
+    height: '100vh',
+    overflow: 'hidden',
+    background: tema.fondo,
+    color: tema.texto
+  };
+
+  // Panel Izquierdo (Visual/Branding)
+  const leftPanelStyle = {
+    flex: '1.2', // Ocupa un poco más de la mitad (60% aprox)
+    background: `linear-gradient(135deg, ${tema.primario}, ${tema.secundario})`,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+    color: '#fff',
+    position: 'relative',
+    // Ocultar en móviles si lo deseas, o cambiar a flex-direction column en CSS global
+  };
+
+  // Panel Derecho (Formulario)
+  const rightPanelStyle = {
+    flex: '0.8', // Ocupa el resto (40% aprox)
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    background: tema.fondo,
+    padding: 40,
+    boxShadow: '-10px 0 20px rgba(0,0,0,0.05)', // Sutil sombra separadora
+    zIndex: 2
+  };
+
+  const formContainerStyle = {
+    width: '100%',
+    maxWidth: 400, // Evita que los inputs sean infinitamente anchos
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 20
+  };
+
   const inputStyle = {
     width: '100%',
-    padding: '12px 14px',
-    borderRadius: 10,
+    padding: '16px 16px', // Más padding para que se vea moderno
+    borderRadius: 8,
     border: `1px solid ${tema.borde}`,
-    background: tema.secundario,
+    background: tema.secundario, // Fondo sutil para inputs
     color: tema.texto,
-    fontSize: 14,
+    fontSize: 15,
+    outline: 'none',
+    transition: 'border-color 0.2s',
     boxSizing: 'border-box'
   };
 
-  const cardStyle = {
-    background: tema.fondo,
-    borderRadius: 14,
-    boxShadow: `0 12px 36px ${tema.acento}22`,
-    border: `1px solid ${tema.borde}`,
-    maxWidth: 420,
+  const buttonStyle = {
     width: '100%',
-    padding: 28,
-    boxSizing: 'border-box'
+    padding: '16px',
+    borderRadius: 8,
+    background: tema.primario,
+    color: '#fff',
+    border: 'none',
+    fontWeight: 'bold',
+    fontSize: 16,
+    cursor: loading ? 'wait' : 'pointer',
+    marginTop: 10,
+    boxShadow: `0 4px 14px ${tema.acento}44`
   };
 
   return (
-    <div style={{
-      background: `linear-gradient(180deg, ${tema.fondo}, ${tema.secundario})`,
-      minHeight: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-      color: tema.texto
-    }}>
-      <div style={{ width: '100%', maxWidth: 900, display: 'flex', gap: 28, alignItems: 'center', justifyContent: 'center' }}>
-        <div style={cardStyle}>
-          <div style={{ marginBottom: 12 }}>
-            <h1 style={{ margin: 0, fontSize: 20, color: tema.texto }}>Iniciar sesión</h1>
-            <div style={{ fontSize: 13, color: '#666', marginTop: 6 }}>Ingresa tu usuario o clave para continuar</div>
+    <div style={layoutStyle}>
+      
+      {/* SECCIÓN IZQUIERDA: Visual y Branding */}
+      <div className="login-visual-panel" style={leftPanelStyle}>
+        {/* Círculos decorativos de fondo (opcional) */}
+        <div style={{
+          position: 'absolute', top: '-10%', left: '-10%', width: '50%', paddingBottom: '50%',
+          background: 'rgba(255,255,255,0.1)', borderRadius: '50%'
+        }}></div>
+        
+        <div style={{ zIndex: 2, textAlign: 'center' }}>
+          <h1 style={{ fontSize: '3rem', margin: 0, fontWeight: 800 }}>SuperTech</h1>
+          <p style={{ fontSize: '1.2rem', opacity: 0.9, marginTop: 10 }}>Gestión inteligente para tu negocio</p>
+        </div>
+      </div>
+
+      {/* SECCIÓN DERECHA: Formulario */}
+      <div style={rightPanelStyle}>
+        <div style={formContainerStyle}>
+          
+          <div>
+            <h2 style={{ fontSize: 28, margin: '0 0 8px 0', color: tema.texto }}>Bienvenido de nuevo</h2>
+            <p style={{ margin: 0, color: '#888', fontSize: 14 }}>Por favor ingresa tus datos para acceder.</p>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-            <label style={{ fontSize: 13, color: '#444' }}>Usuario o clave</label>
-            <input
-              style={inputStyle}
-              type="text"
-              placeholder="usuario o clave"
-              value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
-              autoComplete="username"
-              required
-            />
-
-            <label style={{ fontSize: 13, color: '#444', marginTop: 6 }}>Contraseña</label>
-            <input
-              style={inputStyle}
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                marginTop: 6,
-                background: tema.primario,
-                color: '#fff',
-                padding: '12px 14px',
-                borderRadius: 10,
-                border: 'none',
-                fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: `0 10px 26px ${tema.acento}33`
-              }}
-            >
-              {loading ? 'Entrando...' : 'Entrar'}
-            </button>
-
-            {error && (
-              <div style={{ color: '#a33', fontSize: 13, textAlign: 'center', marginTop: 6 }}>{error}</div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-              <button
-                type="button"
-                onClick={() => setShowRegister(true)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: tema.borde,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  padding: 0
-                }}
-              >
-                ¿Eres nuevo? Regístrate
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); alert('Función de recuperar contraseña no implementada.'); }}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#666',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  padding: 0
-                }}
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14 }}>Usuario</label>
+              <input
+                style={inputStyle}
+                type="text"
+                placeholder="Ej. admin"
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
+                autoComplete="username"
+                required
+              />
             </div>
-          </form>
-        </div>
 
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14 }}>Contraseña</label>
+              <input
+                style={inputStyle}
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
+            <button type="submit" style={buttonStyle} disabled={loading}>
+              {loading ? 'Validando...' : 'Iniciar Sesión'}
+            </button>
+          </form>
+
+          {error && (
+            <div style={{ 
+              padding: 12, borderRadius: 6, background: '#fee2e2', color: '#991b1b', 
+              fontSize: 14, textAlign: 'center', border: '1px solid #fecaca' 
+            }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+            <button 
+              type="button" 
+              onClick={() => setShowRegister(true)}
+              style={{ background: 'none', border: 'none', color: tema.primario, cursor: 'pointer', fontWeight: 600 }}
+            >
+              Crear cuenta
+            </button>
+            
+            <button 
+               type="button"
+               onClick={() => alert('Contacta al administrador.')}
+               style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 13 }}
+            >
+              ¿Olvidaste tu clave?
+            </button>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 30, color: '#aaa', fontSize: 12 }}>
+            © 2025 Supermercado System
+          </div>
+
+        </div>
       </div>
     </div>
   );
